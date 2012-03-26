@@ -12,23 +12,23 @@ class Monitor(Thread):
         self.delay = delay
 
     def add_sensor(self, host, port):
-        self.sensors[host] = port
+        self.sensors[(host, port)] = ''
 
     def keep_alive(self):
         scp = self.sensors.copy()
-        for key in scp:
+        for (host, port) in scp:
             try:
-                f = urllib2.urlopen("http://%s:%s/keepalive/"%(key,self.sensors[key]))
-
+                f = urllib2.urlopen("http://%s:%s/keepalive/"%(host, port))
+                
                 if f.msg != "OK" or f.code != 200:
-                    self.sensors.pop(key)
-
-                print "Sensor %s:%s dziala poprawnie"%(key, self.sensors[key])
-
+                    self.sensors.pop((host, port))
+                    
+                print "Sensor %s:%s dziala poprawnie"%(host, port)
+                        
             except Exception, e:
-                print "Sensor %s:%s nie odpowiada"%(key, self.sensors[key])
+                print "Sensor %s:%s nie odpowiada"%(host, port)
                 print e
-                self.sensors.pop(key)
+                self.sensors.pop((host, port))
                 continue
 
     def run(self):
@@ -37,7 +37,7 @@ class Monitor(Thread):
             time.sleep(self.delay)
 
     def get_sensors(self):
-        return str(self.sensors).replace('\'', '"')
+        return str(self.sensors.keys()).replace('\'', '"')
 
 app = Flask("monitor")
 monitor = Monitor()
@@ -56,9 +56,9 @@ class MonitorHTTP:
         monitor.add_sensor(str(request.remote_addr), request.form["port"])
         return 'OK'
 
-    def start(self):
+    def start(self, debug = False):
         monitor.start()
-        app.debug = True
+        app.debug = debug
         app.run(host = "0.0.0.0", port = self.port)
 
 

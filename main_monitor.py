@@ -8,4 +8,4 @@ if len(argv) < 2 :
 
 if __name__ == "__main__":
     mh = MonitorHTTP(int(argv[1]))
-    mh.start()
+    mh.start(True)
