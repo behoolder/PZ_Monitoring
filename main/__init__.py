@@ -1,17 +1,11 @@
-__author__ = 'Ozyrys'
-
-
-
 from sensor.sensor import get_sensor
 from flask import Flask
-
 
 app = Flask(__name__)
 
 @app.route("/")
 def index():
     return 'test - dziala'
-
 
 @app.route("/get_data/")
 def get_data():
@@ -23,4 +17,4 @@ def get_data():
         return a
 
 # run app
-app.run(host = '10.20.109.76')
+app.run(host = '0.0.0.0')
