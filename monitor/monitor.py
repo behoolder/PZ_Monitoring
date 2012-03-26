@@ -1,6 +1,8 @@
 import urllib2
 import time
 from threading import Thread
+from flask import request
+from flask import Flask
 
 class Monitor(Thread):
 
@@ -37,3 +39,28 @@ class Monitor(Thread):
     def get_sensors(self):
         return str(self.sensors).replace('\'', '"')
 
+app = Flask("monitor")
+monitor = Monitor()
+
+class MonitorHTTP:
+    
+    def __init__(self, port):
+        self.port = port
+
+    @app.route('/sensors/', methods=['GET'])
+    def sensors():
+        return monitor.get_sensors()
+
+    @app.route('/register/', methods=['POST'])
+    def register():
+        monitor.add_sensor(str(request.remote_addr), request.form["port"])
+        return 'OK'
+
+    def start(self):
+        monitor.start()
+        app.debug = True
+        app.run(host = "0.0.0.0", port = self.port)
+
+
+if __name__ == "__main__":
+    pass
