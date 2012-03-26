@@ -13,7 +13,7 @@ if len(argv) < 3 :
     exit()
 
 sensor_port     = argv[1]
-monitor_address = argv[2]
+monitor_address = "http://" + argv[2] + "/register/"
 
 try :
     d = {'port' : sensor_port}
