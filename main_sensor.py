@@ -29,7 +29,7 @@ except Exception, e:
     exit()
     
 else :
-    if str(html) == 'OK' :
+    if response.code == 200 :
         app = Flask(__name__)
 
         @app.route("/")
