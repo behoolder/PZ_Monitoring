@@ -1,5 +1,7 @@
 import os
-
+'''
+Klasa sensora obslugujaca wykrywanie system uzytkownika
+'''
 class Sensor:
     
     def __init__(self):

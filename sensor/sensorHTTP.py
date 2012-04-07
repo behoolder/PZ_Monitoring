@@ -4,7 +4,9 @@ from sensor import Sensor
 from sys import argv
 import urllib
 import urllib2
-
+'''
+Klasa obslugujaca dzialanie serwera HTTP sensora
+'''
 class SensorHTTP:
 
     sensor = Sensor()
