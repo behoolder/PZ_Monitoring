@@ -1,1 +1,2 @@
-__author__ = 'Ozyrys'
+from .sensorHTTP import SensorHTTP
+
