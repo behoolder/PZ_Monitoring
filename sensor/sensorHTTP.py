@@ -8,14 +8,16 @@ import urllib2
 Klasa obslugujaca dzialanie serwera HTTP sensora
 '''
 class SensorHTTP:
+    #TODO: - obsluge nastepujacych uri: cpu, ram, disk (zwracaja informacje)
+    #      - ogarnij klase Sensor zeby byla jakas uzyteczna
 
-    sensor = Sensor()
+    sensor = Sensor() #wtf - tworz odrazu instancje dla opowiedniego systemu
 
     def __init__(self, sensor_port, monitor_address):
         self.sensor_port     = sensor_port
-        self.monitor_address = "http://" + monitor_address + "/register/"
+        self.monitor_address = "http://" + monitor_address + "/register/" #wtf? - co to? adres?
         
-    def start(self, debug = False):
+    def start(self, debug = False): #wtf?! - po co Ci debug skoro nie korzystasz?
         try :
             d = {'port' : self.sensor_port}
 
@@ -30,18 +32,18 @@ class SensorHTTP:
             exit()
     
         else :
-            if response.code == 200 :
-                app = Flask(__name__)
+            if response.code == 200:
+                app = Flask(__name__) #
 
-                @app.route("/")
+                @app.route("/") #?
                 def index():
                     return 'Serwer HTTP dziala'
 
-                @app.route("/keepalive/")
+                @app.route("/keepalive/") #?
                 def keepalive():
                     return 'OK'    
     
-                @app.route("/get_data/")
+                @app.route("/data/") #?
                 def get_data():
                     try:
                         a = self.sensor.get_sensor().get_data().get_str_info()

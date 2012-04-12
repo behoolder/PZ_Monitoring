@@ -1,7 +1,7 @@
 from sys import argv
 from monitor import MonitorHTTP
 
-if len(argv) < 2 :
+if len(argv) < 2:
     print "Brakujacy parametr podczas uruchomienia!"
     print "%s [port]"%(argv[0],)
     exit()

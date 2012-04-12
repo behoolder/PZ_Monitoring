@@ -1,16 +1,33 @@
+import urllib
 import urllib2
 import time
 import uuid
 from threading import Thread
-from flask import request
-from flask import Flask
+from flask import Flask, request, redirect, abort
 
+class Subscription:
+    """
+    Klasa ta jest zwyklym kontenerem dla subskrypcji.
+    """
+
+    def __init__(self, metric, sensor):
+        self.metric = metric
+        self.sensor = sensor
+
+    def get_metric(self):
+        return self.metric
+
+    def get_sensor(self):
+        return self.sensor
+
+    
 class Monitor(Thread):
 
     def __init__(self, delay = 5):
         Thread.__init__(self)
         self.sensors = {}
         self.delay = delay
+        self.subscriptions = {}
 
         #Wygenerowanie ID
         self.id = uuid.uuid1()
@@ -23,9 +40,9 @@ class Monitor(Thread):
         scp = self.sensors.copy()
         for (host, port) in scp:
             try:
-                f = urllib2.urlopen("http://%s:%s/keepalive/"%(host, port))
+                response = urllib2.urlopen("http://%s:%s/keepalive/"%(host, port))
                 
-                if f.msg != "OK" or f.code != 200:
+                if response.msg != "OK" or response.code != 200:
                     self.sensors.pop((host, port))
                     
                 print "Sensor %s:%s dziala poprawnie"%(host, port)
@@ -47,6 +64,26 @@ class Monitor(Thread):
     def get_id(self):
         return str(self.id)
 
+    def create_subscription(self, metric, sensor): 
+        self.subscriptions[len(self.subscriptions) + 1] = Subscription(metric, sensor)
+        return len(self.subscriptions)
+
+    def get_data(self, sid): 
+        if not sid in self.subscriptions:
+            raise KeyError
+
+        host, port = self.subscriptions[sid].get_sensor()
+        ret = []
+
+        for metric in self.subscriptions[sid].get_metric():
+            request  = urllib2.Request("http://%s:%s/%s/"%(host, port, metric), urllib.urlencode({'id' : self.id}))
+            response = urllib2.urlopen(request)
+
+            if response.code == 200:
+                ret.append(response.msg)
+
+        return ret
+
 class MonitorHTTP:
 
     app = Flask("monitor")
@@ -63,6 +100,21 @@ class MonitorHTTP:
     def register():
         MonitorHTTP.monitor.add_sensor(str(request.remote_addr), request.form["port"])
         return MonitorHTTP.monitor.get_id()
+
+    @app.route('/subscribe/', methods=['GET']) #TODO: POST!
+    def subscribe():
+        sid = MonitorHTTP.monitor.create_subscription(['cpu', 'ram'], ('localhost', '5001')) #TODO: POST info
+        return redirect('/subscriptions/' + str(sid) + '/')
+
+    @app.route('/subscriptions/<sid>/', methods=['GET'])
+    def subscriptions(sid):
+        try:
+            data = MonitorHTTP.monitor.get_data(int(sid))
+        except Exception, e:
+            print e
+            abort(404)
+        else:
+            return "".join(data, '\n')
 
     def start(self, debug = False):
         MonitorHTTP.monitor.start()
