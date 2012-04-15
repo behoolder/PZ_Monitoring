@@ -1,5 +1,5 @@
 from sys import argv
-from sensor import SensorHTTP
+from sensor import Sensor
 
 if len(argv) < 3 :
     print "Brakujacy parametr podczas uruchomienia!"
@@ -7,5 +7,5 @@ if len(argv) < 3 :
     exit()
 
 if __name__ == "__main__":
-    shttp = SensorHTTP(argv[1], argv[2])
-    shttp.start(True)
+    s = Sensor(argv[1], argv[2])
+    s.start()

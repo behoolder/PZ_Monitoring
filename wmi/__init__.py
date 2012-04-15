@@ -1,1 +1,1 @@
- 
+from .wmi import WMI 
