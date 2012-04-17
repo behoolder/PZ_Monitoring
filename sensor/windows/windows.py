@@ -1,6 +1,6 @@
-
 from sensor.commons.system_info import SystemInfo
 from wmi import WMI
+from os import getenv
 
 class Windows:
     """
@@ -9,21 +9,6 @@ class Windows:
 
     def __init__(self):
         self.data = SystemInfo()
-
-    def ram_usage(self):
-        """
-        Zwraca informacje na temat calkowitej, uzytej oraz wolnej ilosci
-        pamieci RAM.
-        """
-        myWMI = WMI()
-
-        ram = {}
-
-        ram["total"] = str(myWMI.Win32_ComputerSystem()[0].TotalPhysicalMemory)
-        ram["free"]  = str(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory) * 1024
-        ram["used"]  = str(int(myWMI.Win32_ComputerSystem()[0].TotalPhysicalMemory) - int(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory) * 1024)
-
-        return {"RAM" : ram}
 
     def cpu_usage(self):
         """
@@ -50,7 +35,7 @@ class Windows:
             d["total"] = str(disk.Size)
             d["free"]  = str(disk.FreeSpace)
             d["used"]  = str(int(disk.Size) - int(disk.FreeSpace))
-			
+
             diskList.append(d)
 
         return {"Hard drives" : diskList}
@@ -62,5 +47,27 @@ class Windows:
         self.data.set_ram(self.ram_usage())
         self.data.set_cpu(self.cpu_usage())
         self.data.set_disk(self.disk_space())
+        self.data.set_hostname(self.hostname())
 
         return self.data
+
+    def hostname(self):
+        """
+        Zwraca nazwe hosta
+        """
+        return {"hostname" : getenv("COMPUTERNAME")}
+
+    def ram_usage(self):
+        """
+        Zwraca informacje na temat calkowitej, uzytej oraz wolnej ilosci
+        pamieci RAM.
+        """
+        myWMI = WMI()
+
+        ram = {}
+
+        ram["total"] = str(myWMI.Win32_ComputerSystem()[0].TotalPhysicalMemory)
+        ram["free"]  = str(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory) * 1024
+        ram["used"]  = str(int(myWMI.Win32_ComputerSystem()[0].TotalPhysicalMemory) - int(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory) * 1024)
+
+        return {"RAM" : ram}

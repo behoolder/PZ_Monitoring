@@ -8,10 +8,21 @@ class Sensor:
     '''
     
     def __init__(self, sensor_port, monitor_address):
+        '''
+        Konstruktor klasy Sensor
+        
+        sensor_port     - port na ktorym uruchomiony zostanie sensor
+        monitor_address - Adres IP monitora, ktory bedzie komunikowac sie z sensorem (IP:PORT)
+        '''
+        
         self.sensor_port     = sensor_port
         self.monitor_address = monitor_address
         
     def start(self):
+        '''
+        Inicjuje dzialanie sensora, sprawdza czy monitor istnieje
+        '''
+        
         try :
             d = {'port' : self.sensor_port}
 
