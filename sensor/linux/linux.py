@@ -1,7 +1,5 @@
-
 from sensor.commons.system_info import SystemInfo
 from commands import getoutput
-
 
 class Linux:
     """
@@ -9,13 +7,19 @@ class Linux:
     """
 
     def __init__(self):
+        """
+        Konstruktor klasy Linux.
+        """
+
         self.data = SystemInfo()
+        self.hostname
 
     def ram_usage(self):
         """
         Zwraca informacje na temat calkowitej, uzytej oraz wolnej ilosci
         pamieci RAM.
         """
+
         output = getoutput("free").split()
 
         ram = {}
@@ -33,6 +37,7 @@ class Linux:
         n - liczba iteracji pomijanych zanim obciazenie CPU zostanie obliczone
         delay - opoznienie pomiedzy iteracjami
         """
+
         if not isinstance(n, int) or not isinstance(delay, float):
             raise TypeError
 
@@ -60,6 +65,7 @@ class Linux:
         """
         Zwraca informacje na temat dysku twardego.
         """
+
         output = getoutput("df -l").split("\n")
 
         disk = []
@@ -74,12 +80,21 @@ class Linux:
 
         return {"Hard drives" : disk}
 
+    def hostname(self):
+        """
+        Zwraca nazwe hosta.
+        """
+        
+        return getoutput("hostname")
+
     def get_data(self):
         """
-        Zwraca wszystkie informacje
+        Zwraca wszystkie informacje.
         """
+
         self.data.set_ram(self.ram_usage())
         self.data.set_cpu(self.cpu_usage())
         self.data.set_disk(self.disk_space())
+        self.data.set_hostname(self.hostname())
 
         return self.data

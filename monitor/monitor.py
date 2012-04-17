@@ -2,10 +2,12 @@ import urllib
 import urllib2
 import time
 import uuid
+import sqlite3
+import os
 from threading import Thread
 from flask import Flask, request, redirect, abort
 
-class Subscription:
+class Subscription: #TODO: User
     """
     Klasa ta jest zwyklym kontenerem dla subskrypcji.
     """
@@ -55,6 +57,8 @@ class Monitor(Thread):
         #Wygenerowanie ID
         self.id = uuid.uuid1()
 
+        self.load_subscriptions()
+
     def add_sensor(self, host, port):
         """
         Rejestruje nowy sensor.
@@ -63,7 +67,7 @@ class Monitor(Thread):
         port - port sensora
         """
 
-        self.sensors[(host, port)] = ''
+        self.sensors[(host, port)] = None
         print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
 
     def keep_alive(self):
@@ -113,16 +117,89 @@ class Monitor(Thread):
 
         return str(self.id)
 
-    def create_subscription(self, metric, sensor): 
+    def create_subscription(self, metric, sensor, filename = "subscriptions.db"): 
         """
         Tworzy nowa subskrypcje.
 
         metric - monitorowane metryki
         sensor - monitorowany sensor
+        filename - nazwa pliku z baza danych
         """
 
-        self.subscriptions[len(self.subscriptions) + 1] = Subscription(metric, sensor)
-        return len(self.subscriptions)
+        self.subscriptions[max(self.subscriptions) + 1] = Subscription(metric, sensor)
+
+        try: 
+            con = sqlite3.connect(filename)
+            cur = con.cursor()
+
+            cur.execute("INSERT INTO subscriptions VALUES (?, ?, ?, ?)", (None, 'user', str(sensor), str(metric))) #TODO: User            
+            con.commit()
+
+        except sqlite3.Error, e:
+            print "Database error: %s"%e.args[0]
+
+        finally:
+            if con:
+                con.close()
+
+        return max(self.subscriptions)
+
+    def delete_subscription(self, sid, filename = "subscriptions.db"):
+        """
+        Usuwa subskrypcje.
+
+        sid - numer subskrypcji
+        filename - nazwa pliku z baza danych
+        """
+
+        if not sid in self.subscriptions:
+            raise KeyError
+
+        try: 
+            con = sqlite3.connect(filename)
+            cur = con.cursor()
+
+            cur.execute("DELETE FROM subscriptions WHERE id = ?", sid)
+
+            con.commit()
+
+        except sqlite3.Error, e:
+            print "Database error: %s"%e.args[0]
+
+        finally:
+            if con:
+                con.close()        
+
+        del self.subscriptions[sid]
+
+    def load_subscriptions(self, filename = "subscriptions.db"):
+        """
+        Laduje subskrypcje z bazy danych (SQLite). Jesli plik z baza nie istnieje to 
+        tworzy nowa baze oraz odpowiednie tabele.
+
+        filename - nazwa pliku z baza danych
+        """
+
+        exists = os.path.exists(filename)
+
+        try: 
+            con = sqlite3.connect(filename)
+            cur = con.cursor()
+
+            if not exists:
+                cur.execute("CREATE TABLE subscriptions (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, sensor TEXT, metric TEXT);")
+                con.commit()
+            else:
+                cur.execute("SELECT * FROM subscriptions")                
+                for row in cur:
+                    self.subscriptions[row[0]] = Subscription(eval(row[3]), eval(row[2])) #TODO: User
+
+        except sqlite3.Error, e:
+            print "Database error: %s" % e.args[0]
+
+        finally:
+            if con:
+                con.close()
 
     def get_data(self, sid): 
         """
@@ -193,21 +270,28 @@ class MonitorHTTP:
         sid = MonitorHTTP.monitor.create_subscription(['cpu', 'ram'], ('localhost', '5001')) #TODO: POST info
         return redirect('/subscriptions/' + str(sid) + '/')
 
-    @app.route('/subscriptions/<sid>/', methods=['GET'])
+    @app.route('/subscriptions/<sid>/', methods=['GET', 'DELETE'])
     def subscriptions(sid):
         """
-        Zwraca odpowiednie dane z sensora przypisane do konkretnej subskrypcji.
+        GET: Zwraca odpowiednie dane z sensora przypisane do konkretnej subskrypcji.
+        DELETE: Usuwa subskrypcje.
 
         sid - numer subskrypcji
         """
 
         try:
-            data = MonitorHTTP.monitor.get_data(int(sid))
+            if request.method == 'GET':
+                data = MonitorHTTP.monitor.get_data(int(sid))
+            else:
+                data = MonitorHTTP.monitor.delete_subscription(sid)
         except Exception, e:
             print e
             abort(404)
         else:
-            return "".join(data)
+            if request.method == 'GET':
+                return "".join(data)
+            else:
+                return "Subskrypcja zostala usunieta!"
 
     def start(self, debug = False):
         """
