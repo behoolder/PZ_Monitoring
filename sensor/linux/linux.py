@@ -85,7 +85,7 @@ class Linux:
         Zwraca nazwe hosta.
         """
         
-        return getoutput("hostname")
+        return {"Hostname" : getoutput("hostname")}
 
     def get_data(self):
         """
