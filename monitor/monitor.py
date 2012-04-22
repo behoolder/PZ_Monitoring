@@ -54,6 +54,12 @@ class Monitor(Thread):
         self.delay = delay
         self.subscriptions = {}
 
+        self.mysql = {}        
+        self.mysql["host"] = "localhost"
+        self.mysql["user"] = "root"
+        self.mysql["passwd"] = "root"
+        self.mysql["db"] = "PZDB"
+
         #Wygenerowanie ID
         self.id = uuid.uuid1()
 
@@ -67,7 +73,7 @@ class Monitor(Thread):
         port - port sensora
         """
 
-        self.sensors[(host, port)] = None
+        self.sensors[(host, port)] = False
         print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
 
     def keep_alive(self):
@@ -85,7 +91,12 @@ class Monitor(Thread):
                     print "Sensor %s:%s nie odpowiada"%(host, port)
                     self.sensors.pop((host, port))
                     continue
-                    
+
+                if self.sensors[(host, port)] == False:
+                    response = urllib2.urlopen("http://%s:%s/hostname/"%(host, port))
+                    hostname = eval(response.read())
+                    self.sensors[(host, port)] = hostname["Hostname"]
+
                 print "Sensor %s:%s dziala poprawnie"%(host, port)
                         
             except Exception, e:
@@ -108,7 +119,7 @@ class Monitor(Thread):
         Zwraca wszystkie zarejestrowane sensory.
         """
 
-        return str(self.sensors.keys()).replace('\'', '"')
+        return str(self.sensors).replace('\'', '"')
 
     def get_id(self):
         """
@@ -116,6 +127,13 @@ class Monitor(Thread):
         """
 
         return str(self.id)
+
+    def get_mysql(self):
+        """
+        Zwraca informacje o polaczeniu do bazy danych MySQL.
+        """
+
+        return self.mysql
 
     def create_subscription(self, metric, sensor, filename = "subscriptions.db"): 
         """
@@ -303,6 +321,12 @@ class MonitorHTTP:
         MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug
         MonitorHTTP.app.run(host = "0.0.0.0", port = self.port)
+
+#        mysql = MonitorHTTP.monitor.get_mysql()
+
+#        db = _mysql.connect(host = mysql["host"], user = mysql["user"], passwd = mysql["passwd"], db = mysql["db"])
+#        db.query("INSERT INTO Monitor(URI, CPU, RAM, HDD) VALUES(?, ?, ?, ?)", ("localhost:5000", True, True, True))
+#        db.close()
 
 
 if __name__ == "__main__":

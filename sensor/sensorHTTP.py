@@ -68,13 +68,12 @@ class SensorHTTP:
         SensorHTTP.check_monitor_id(request.form["id"])
         return str(SensorHTTP.sensor.disk_space())
 
-    @app.route("/hostname/", methods=['POST'])
+    @app.route("/hostname/", methods=['GET'])
     def get_hostname():
         '''
         Zwraca informacje o nazwie hosta
         '''
         
-        SensorHTTP.check_monitor_id(request.form["id"])
         return str(SensorHTTP.sensor.hostname())
                 
     @app.route("/data/", methods=['POST'])
