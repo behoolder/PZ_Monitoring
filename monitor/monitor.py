@@ -4,6 +4,7 @@ import time
 import uuid
 import sqlite3
 import os
+import mysql.connector
 from threading import Thread
 from flask import Flask, request, redirect, abort
 
@@ -63,9 +64,10 @@ class Monitor(Thread):
         #Wygenerowanie ID
         self.id = uuid.uuid1()
 
+        #Wczytanie subskrypcji z bazy sqllite
         self.load_subscriptions()
 
-    def add_sensor(self, host, port):
+    def add_sensor(self, host, port, hostname):
         """
         Rejestruje nowy sensor.
 
@@ -73,8 +75,17 @@ class Monitor(Thread):
         port - port sensora
         """
 
-        self.sensors[(host, port)] = False
+        self.sensors[(host, port)] = hostname
         print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
+
+        try:
+            db = mysql.connector.Connect(host = self.mysql["host"], user = self.mysql["user"], passwd = self.mysql["passwd"], db = self.mysql["db"])
+            cursor = db.cursor()
+            cursor.execute("INSERT INTO Sensors(monitorUUID, name, address, port, cpu, ram, hdd) VALUES(%s, %s, %s, %s, %s, %s, %s)", (self.get_id(), hostname, host, port, True, True, True))
+        except Exception, e:
+            print e
+        finally:
+            db.close()        
 
     def keep_alive(self):
         """
@@ -92,10 +103,10 @@ class Monitor(Thread):
                     self.sensors.pop((host, port))
                     continue
 
-                if self.sensors[(host, port)] == False:
-                    response = urllib2.urlopen("http://%s:%s/hostname/"%(host, port))
-                    hostname = eval(response.read())
-                    self.sensors[(host, port)] = hostname["Hostname"]
+#                if self.sensors[(host, port)] == False:
+#                    response = urllib2.urlopen("http://%s:%s/hostname/"%(host, port))
+#                    hostname = eval(response.read())
+#                    self.sensors[(host, port)] = hostname["Hostname"]
 
                 print "Sensor %s:%s dziala poprawnie"%(host, port)
                         
@@ -275,7 +286,7 @@ class MonitorHTTP:
         Dostep: POST
         """
 
-        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), request.form["port"])
+        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), request.form["port"], request.form["hostname"])
         return MonitorHTTP.monitor.get_id()
 
     @app.route('/subscribe/', methods=['GET']) #TODO: POST!
@@ -311,6 +322,22 @@ class MonitorHTTP:
             else:
                 return "Subskrypcja zostala usunieta!"
 
+    def db_register(self):
+        """
+        Dodaje informacje o nowym monitorze do katalogu.
+        """
+
+        data = MonitorHTTP.monitor.get_mysql()
+
+        try:
+            db = mysql.connector.Connect(host = data["host"], user = data["user"], passwd = data["passwd"], db = data["db"])
+            cursor = db.cursor()
+            cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
+        except Exception, e:
+            print e
+        finally:
+            db.close()
+
     def start(self, debug = False):
         """
         Uruchamia monitor oraz serwer HTTP.
@@ -318,15 +345,11 @@ class MonitorHTTP:
         debug - ustala czy serwer HTTP ma byc uruchomiony w trybie debugowania.
         """
 
-        MonitorHTTP.monitor.start()
+        self.db_register()
+
+#        MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug
         MonitorHTTP.app.run(host = "0.0.0.0", port = self.port)
-
-#        mysql = MonitorHTTP.monitor.get_mysql()
-
-#        db = _mysql.connect(host = mysql["host"], user = mysql["user"], passwd = mysql["passwd"], db = mysql["db"])
-#        db.query("INSERT INTO Monitor(URI, CPU, RAM, HDD) VALUES(?, ?, ?, ?)", ("localhost:5000", True, True, True))
-#        db.close()
 
 
 if __name__ == "__main__":

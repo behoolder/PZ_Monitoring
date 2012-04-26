@@ -24,7 +24,7 @@ class Sensor:
         '''
         
         try :
-            d = {'port' : self.sensor_port}
+            d = {'port' : self.sensor_port, 'hostname' : 'nazwa :<'} #TODO: hostname
 
             data     = urllib.urlencode(d)
             request  = urllib2.Request("http://" + self.monitor_address + "/register/", data)
