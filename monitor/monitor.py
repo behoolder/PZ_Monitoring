@@ -64,10 +64,10 @@ class Monitor(Thread):
         self.subscriptions = {}
 
         self.mysql = {}        
-        self.mysql["host"] = "localhost"
-        self.mysql["user"] = "root"
-        self.mysql["passwd"] = "root"
-        self.mysql["db"] = "PZDB"
+        self.mysql["host"] = "db4free.net"
+        self.mysql["user"] = "prgzsp"
+        self.mysql["passwd"] = "123321"
+        self.mysql["db"] = "prgzspdb"
 
         #Wygenerowanie ID
         self.id = uuid.uuid1()
@@ -416,7 +416,7 @@ class MonitorHTTP:
 
         self.db_register()
 
-        MonitorHTTP.monitor.start()
+#        MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug
         MonitorHTTP.app.run(host = "0.0.0.0", port = self.port)
 
