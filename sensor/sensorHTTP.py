@@ -11,17 +11,14 @@ class SensorHTTP:
     monitor_id      = None
     sensor          = None
 
-    def __init__(self, sensor_port, monitor_id):
+    def __init__(self, sensor_port):
         '''
         Konstruktor klasy SensorHTTP
         
         sensor_port - port na ktorym uruchomiony zostanie sensor
-        monitor_id  - ID monitora ktory bedzie otrzymywac informacje z sensora
         '''
         
         self.sensor_port = sensor_port
-
-        SensorHTTP.monitor_id = monitor_id
         
         if os.name == 'posix':
             from linux.linux import Linux
@@ -31,7 +28,10 @@ class SensorHTTP:
             SensorHTTP.sensor = Windows()
         else :
             print 'Nie rozpoznano systemu, sensor zostanie wylaczony.'
-            exit()        
+            exit()    
+
+    def add_monitor_id(self, monitor_id):
+        SensorHTTP.monitor_id = monitor_id
 
     @app.route("/keepalive/", methods=['GET'])
     def keepalive():
@@ -73,17 +73,15 @@ class SensorHTTP:
         '''
         Zwraca informacje o nazwie hosta
         '''
-        
+   
         return str(SensorHTTP.sensor.hostname())
-                
-    @app.route("/data/", methods=['POST'])
-    def get_data():
+
+    def get_metrics(self):
         '''
-        Zwraca wszystkie dane z sensora
+        Zwraca informacje o nazwie hosta lokalnie
         '''
         
-        SensorHTTP.check_monitor_id(request.form["id"])
-        return str(SensorHTTP.sensor.get_data())
+        return SensorHTTP.sensor.metrics()
 
     def start(self):
         '''

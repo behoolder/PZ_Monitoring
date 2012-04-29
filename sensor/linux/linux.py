@@ -80,12 +80,11 @@ class Linux:
 
         return {"Hard drives" : disk}
 
-    def hostname(self):
+    def metrics(self):
         """
-        Zwraca nazwe hosta.
+        Zwraca metryki
         """
-        
-        return {"Hostname" : getoutput("hostname")}
+        return {"hostname" : getoutput("hostname"), "cpu" : "1", "ram" : "1", "hdd" : "1"}
 
     def get_data(self):
         """

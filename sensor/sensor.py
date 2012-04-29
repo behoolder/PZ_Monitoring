@@ -17,6 +17,7 @@ class Sensor:
         
         self.sensor_port     = sensor_port
         self.monitor_address = monitor_address
+        self.shttp           = SensorHTTP(self.sensor_port)
         
     def start(self):
         '''
@@ -24,7 +25,11 @@ class Sensor:
         '''
         
         try :
-            d = {'port' : self.sensor_port, 'hostname' : 'nazwa :<'} #TODO: hostname
+            d = {'port' : self.sensor_port}
+            m = self.shttp.get_metrics()
+            
+            for key in m.keys():
+                d[key] = m[key]
 
             data     = urllib.urlencode(d)
             request  = urllib2.Request("http://" + self.monitor_address + "/register/", data)
@@ -40,8 +45,8 @@ class Sensor:
     
         else :
             if response.code == 200:
-                shttp = SensorHTTP(self.sensor_port, self.monitor_id)
-                shttp.start()
+                self.shttp.add_monitor_id(self.monitor_id)
+                self.shttp.start()
             else:
                 print 'Brak odpowiedzi monitora'
                 exit()

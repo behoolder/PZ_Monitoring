@@ -47,15 +47,14 @@ class Windows:
         self.data.set_ram(self.ram_usage())
         self.data.set_cpu(self.cpu_usage())
         self.data.set_disk(self.disk_space())
-        self.data.set_hostname(self.hostname())
 
         return self.data
 
-    def hostname(self):
+    def metrics(self):
         """
-        Zwraca nazwe hosta
+        Zwraca metryki
         """
-        return {"hostname" : getenv("COMPUTERNAME")}
+        return {"hostname" : getenv("COMPUTERNAME"), "cpu" : "1", "ram" : "1", "hdd" : "1"}
 
     def ram_usage(self):
         """
