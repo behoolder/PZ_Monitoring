@@ -75,27 +75,50 @@ class Monitor(Thread):
         #Wczytanie subskrypcji z bazy sqllite
         self.load_subscriptions()
 
-    def add_sensor(self, host, port, hostname):
+    def add_sensor(self, host, port, hostname, cpu = True, ram = True, hdd = True):
         """
         Rejestruje nowy sensor.
 
         host - adres sensora
         port - port sensora
+        hostname - nazwa sensora
+        cpu - informuje czy sensor monitoruje obciazenie cpu
+        ram - informuje czy sensor monitoruje zuzycie ramu
+        hdd - informuje czy sensor monitoruje dane o dyskach
         """
-
-        self.sensors[(host, port)] = hostname
-        print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
 
         try:
             db = mysql.connector.Connect(host = self.mysql["host"], user = self.mysql["user"], passwd = self.mysql["passwd"], db = self.mysql["db"])
             cursor = db.cursor()
-            cursor.execute("INSERT INTO Sensors(monitorUUID, name, address, port, cpu, ram, hdd) VALUES(%s, %s, %s, %s, %s, %s, %s)", (self.get_id(), hostname, host, port, True, True, True))
+            cursor.execute("INSERT INTO Sensors(monitorUUID, name, address, port, cpu, ram, hdd) VALUES(%s, %s, %s, %s, %s, %s, %s)", (self.get_id(), hostname, host, port, cpu, ram, hdd))
         except Exception, e:
             print e
         finally:
             db.close()        
 
-    def keep_alive(self):
+        self.sensors[(host, port)] = hostname
+        print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
+
+    def del_sensor(self, host, port):
+        """
+        Usuwa sensor z bazy danych.
+
+        host - adres sensora
+        port - port sensora
+        """
+
+        self.sensors.pop((host, port))
+
+        try:
+            db = mysql.connector.Connect(host = self.mysql["host"], user = self.mysql["user"], passwd = self.mysql["passwd"], db = self.mysql["db"])
+            cursor = db.cursor()
+            cursor.execute("DELETE FROM Sensors WHERE monitorUUID = %s AND address = %s AND port = %s", (self.get_id(), host, port))
+        except Exception, e:
+            print e
+        finally:
+            db.close()        
+
+    def keep_alive(self): 
         """
         Sprawdza czy wszystkie zarejestrowane sensory sa nadal wlaczone i sprawne.
         Jesli ktorys z sensorow nie odpowiada to zostaje on wyrzucony z listy.
@@ -108,20 +131,15 @@ class Monitor(Thread):
                 
                 if response.msg != "OK" or response.code != 200:
                     print "Sensor %s:%s nie odpowiada"%(host, port)
-                    self.sensors.pop((host, port))
+                    self.del_sensor(host, port)
                     continue
-
-#                if self.sensors[(host, port)] == False:
-#                    response = urllib2.urlopen("http://%s:%s/hostname/"%(host, port))
-#                    hostname = eval(response.read())
-#                    self.sensors[(host, port)] = hostname["Hostname"]
 
                 print "Sensor %s:%s dziala poprawnie"%(host, port)
                         
             except Exception, e:
                 print "Sensor %s:%s nie odpowiada"%(host, port)
                 print e
-                self.sensors.pop((host, port))
+                self.del_sensor(host, port)
                 continue
 
     def run(self):
@@ -255,8 +273,8 @@ class Monitor(Thread):
             if self.subscriptions[s].get_user() == user:
                 sl.append({"id" : s, "sensor" : self.subscriptions[s].get_sensor(), "metric" : self.subscriptions[s].get_metric()})
 
-        ret = {user : sl}
-        return str(ret)
+        ret = {str(user) : sl}
+        return str(ret).replace("(", "[").replace(")", "]")
 
     def get_data(self, user, sid): 
         """
@@ -272,16 +290,16 @@ class Monitor(Thread):
             raise ValueError
 
         host, port = self.subscriptions[sid].get_sensor()
-        ret = []
+        data = {}
 
         for metric in self.subscriptions[sid].get_metric():
             request  = urllib2.Request("http://%s:%s/%s/"%(host, port, metric), urllib.urlencode({'id' : self.id}))
             response = urllib2.urlopen(request)
 
             if response.code == 200:
-                ret.append(response.read())
+                data.update(eval(response.read()))
 
-        return ret
+        return str({str(self.sensors[(host, port)]) : data})
 
 
 class MonitorHTTP:
@@ -333,17 +351,29 @@ class MonitorHTTP:
         Dostep: POST
         """
 
-        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), request.form["port"], request.form["hostname"])
+        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), str(request.form['port']), str(request.form['hostname']))
         return MonitorHTTP.monitor.get_id()
 
-    @app.route('/subscribe/', methods=['GET']) #TODO: POST!
+    @app.route('/subscribe/', methods=['GET']) 
     def subscribe():
         """
         Tworzy nowa subskrypcje. Wymaga wczesniejszego zalogowania.
         Dostep: POST
         """
         if 'username' in session:
-            sid = MonitorHTTP.monitor.create_subscription(session["username"], ['cpu', 'ram'], ('localhost', '5001')) #TODO: POST info
+            if request.method == 'GET':
+                sid = MonitorHTTP.monitor.create_subscription(session['username'], ['cpu', 'ram', 'hdd'], ('127.0.0.1', '5001')) 
+            if request.method == 'POST':
+                sensor = (str(request.form['host']), str(request.form['port']))
+                metric = []
+                if str(request.form['cpu']) == '1':
+                    metric.append('cpu')
+                if str(request.form['ram']) == '1':
+                    metric.append('ram')
+                if str(request.form['hdd']) == '1':
+                    metric.append('hdd')
+
+                sid = MonitorHTTP.monitor.create_subscription(session['username'], metric, sensor) 
             return redirect('/subscriptions/' + str(sid) + '/')
         else:
             return 'Nie jestes zalogowany!'
@@ -356,8 +386,7 @@ class MonitorHTTP:
         """
 
         if 'username' in session:
-            return MonitorHTTP.monitor.subscription_list(session["username"])
-
+            return MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
         else:
             return 'Nie jestes zalogowany!'
 
@@ -376,9 +405,9 @@ class MonitorHTTP:
 
         try:
             if request.method == 'GET':
-                data = MonitorHTTP.monitor.get_data(session["username"], int(sid))
+                data = MonitorHTTP.monitor.get_data(session['username'], int(sid))
             else:
-                data = MonitorHTTP.monitor.delete_subscription(session["username"], int(sid))
+                data = MonitorHTTP.monitor.delete_subscription(session['username'], int(sid))
         except ValueError, e:
             print e
             abort(403)
@@ -387,7 +416,7 @@ class MonitorHTTP:
             abort(404)
         else:
             if request.method == 'GET':
-                return "".join(data)
+                return data.replace("'", "\"")
             else:
                 return "Subskrypcja zostala usunieta!"
 
@@ -416,7 +445,7 @@ class MonitorHTTP:
 
         self.db_register()
 
-#        MonitorHTTP.monitor.start()
+        MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug
         MonitorHTTP.app.run(host = "0.0.0.0", port = self.port)
 
