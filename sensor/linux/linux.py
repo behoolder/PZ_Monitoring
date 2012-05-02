@@ -12,7 +12,6 @@ class Linux:
         """
 
         self.data = SystemInfo()
-        self.hostname
 
     def ram_usage(self):
         """
@@ -94,6 +93,5 @@ class Linux:
         self.data.set_ram(self.ram_usage())
         self.data.set_cpu(self.cpu_usage())
         self.data.set_disk(self.disk_space())
-        self.data.set_hostname(self.hostname())
 
         return self.data
