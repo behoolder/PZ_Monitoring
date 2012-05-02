@@ -5,6 +5,7 @@ import uuid
 import sqlite3
 import os
 import mysql.connector
+from config import Config
 from threading import Thread
 from flask import Flask, request, redirect, abort, session, escape
 
@@ -63,12 +64,6 @@ class Monitor(Thread):
         self.delay = delay
         self.subscriptions = {}
 
-        self.mysql = {}        
-        self.mysql["host"] = "db4free.net"
-        self.mysql["user"] = "prgzsp"
-        self.mysql["passwd"] = "123321"
-        self.mysql["db"] = "prgzspdb"
-
         #Wygenerowanie ID
         self.id = uuid.uuid1()
 
@@ -88,7 +83,7 @@ class Monitor(Thread):
         """
 
         try:
-            db = mysql.connector.Connect(host = self.mysql["host"], user = self.mysql["user"], passwd = self.mysql["passwd"], db = self.mysql["db"])
+            db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("INSERT INTO Sensors(monitorUUID, name, address, port, cpu, ram, hdd) VALUES(%s, %s, %s, %s, %s, %s, %s)", (self.get_id(), hostname, host, port, cpu, ram, hdd))
         except Exception, e:
@@ -110,7 +105,7 @@ class Monitor(Thread):
         self.sensors.pop((host, port))
 
         try:
-            db = mysql.connector.Connect(host = self.mysql["host"], user = self.mysql["user"], passwd = self.mysql["passwd"], db = self.mysql["db"])
+            db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("DELETE FROM Sensors WHERE monitorUUID = %s AND address = %s AND port = %s", (self.get_id(), host, port))
         except Exception, e:
@@ -164,13 +159,6 @@ class Monitor(Thread):
         """
 
         return str(self.id)
-
-    def get_mysql(self):
-        """
-        Zwraca informacje o polaczeniu do bazy danych MySQL.
-        """
-
-        return self.mysql
 
     def create_subscription(self, user, metric, sensor, filename = "subscriptions.db"): 
         """
@@ -351,7 +339,9 @@ class MonitorHTTP:
         Dostep: POST
         """
 
-        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), str(request.form['port']), str(request.form['hostname']))
+        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), str(request.form['port']), str(request.form['hostname']),
+                                       str(request.form['cpu']) == '1', str(request.form['ram']) == '1', 
+                                       str(request.form['hdd']) == '1')
         return MonitorHTTP.monitor.get_id()
 
     @app.route('/subscribe/', methods=['GET']) 
@@ -425,10 +415,8 @@ class MonitorHTTP:
         Dodaje informacje o nowym monitorze do katalogu.
         """
 
-        data = MonitorHTTP.monitor.get_mysql()
-
         try:
-            db = mysql.connector.Connect(host = data["host"], user = data["user"], passwd = data["passwd"], db = data["db"])
+            db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
         except Exception, e:
@@ -445,7 +433,7 @@ class MonitorHTTP:
 
         self.db_register()
 
-        MonitorHTTP.monitor.start()
+#        MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug
         MonitorHTTP.app.run(host = "0.0.0.0", port = self.port)
 
