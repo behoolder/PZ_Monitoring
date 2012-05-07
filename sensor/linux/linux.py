@@ -1,9 +1,11 @@
+#-*- coding: utf-8 -*-
+
 from sensor.commons.system_info import SystemInfo
 from commands import getoutput
 
 class Linux:
     """
-    Klasa ta zawiera szereg metod informujacych o obciazeniu systemu.
+    Klasa ta zawiera szereg metod informujących o obciażeniu systemu.
     """
 
     def __init__(self):
@@ -15,8 +17,7 @@ class Linux:
 
     def ram_usage(self):
         """
-        Zwraca informacje na temat calkowitej, uzytej oraz wolnej ilosci
-        pamieci RAM.
+        Zwraca informacje na temat całkowitej, użytej oraz wolnej ilości pamięci RAM.
         """
 
         output = getoutput("free").split()
@@ -31,10 +32,10 @@ class Linux:
 
     def cpu_usage(self, n = 2, delay = 0.2):
         """
-        Zwraca informacje na temat obciazenia CPU.
-        Argumenty:
-        n - liczba iteracji pomijanych zanim obciazenie CPU zostanie obliczone
-        delay - opoznienie pomiedzy iteracjami
+        Zwraca informacje na temat obciażenia CPU.\n
+
+        n - liczba iteracji pomijanych zanim obciażenie CPU zostanie obliczone\n
+        delay - opoźnienie pomiędzy iteracjami\n
         """
 
         if not isinstance(n, int) or not isinstance(delay, float):
@@ -62,7 +63,7 @@ class Linux:
 
     def disk_space(self):
         """
-        Zwraca informacje na temat dysku twardego.
+        Zwraca informacje na temat dysku twardego.\n
         """
 
         output = getoutput("df -l").split("\n")
@@ -81,13 +82,13 @@ class Linux:
 
     def metrics(self):
         """
-        Zwraca metryki
+        Zwraca metryki.\n
         """
         return {"hostname" : getoutput("hostname"), "cpu" : "1", "ram" : "1", "hdd" : "1"}
 
     def get_data(self):
         """
-        Zwraca wszystkie informacje.
+        Zwraca wszystkie informacje.\n
         """
 
         self.data.set_ram(self.ram_usage())

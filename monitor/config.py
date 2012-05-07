@@ -1,15 +1,17 @@
+#-*- coding: utf-8 -*-
+
 class Config:
     """
-    Klasa ta sluzy do skonfigurowania parametrow polaczenia z baza danych MySQL.
+    Klasa ta służy do skonfigurowania parametrów połaczenia z bazą danych MySQL.\n
 
-    Uzycie:
-       mysql.connector.Connect(**Config.dbinfo())
+    Użycie:\n
+    mysql.connector.Connect(**Config.dbinfo())\n
     """
     
-    HOST = 'db4free.net'
+    HOST = 'prgzsp'
     DATABASE = 'prgzspdb'
-    USER = 'prgzsp'
-    PASSWORD = '123321'
+    USER = 'root'
+    PASSWORD = 'root'
     PORT = 3306
     
     CHARSET = 'utf8'
@@ -19,7 +21,7 @@ class Config:
     @classmethod
     def dbinfo(cls):
         """
-        Zwraca parametry polaczenia w formie slownika.
+        Zwraca parametry połączenia w formie słownika.
         """
 
         return {
@@ -32,4 +34,3 @@ class Config:
             'use_unicode': cls.UNICODE,
             'get_warnings': cls.WARNINGS,
             }
-    

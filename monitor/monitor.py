@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 import urllib
 import urllib2
 import time
@@ -9,17 +11,32 @@ from config import Config
 from threading import Thread
 from flask import Flask, request, redirect, abort, session, escape
 
+class WrongSubscriptionID(Exception):
+    """
+    Klasa wyjątku informująca o nieistniejącej subskrypcji.
+    """
+    
+    pass
+
+class WrongUser(Exception):
+    """
+    Klasa wyjątku informująca o próbie dostępu do subskrypcji należącej do innego użytkownika.
+    """
+    
+    pass
+
 class Subscription:
     """
-    Klasa ta jest zwyklym kontenerem dla subskrypcji.
+    Klasa ta jest zwykłym kontenerem dla subskrypcji.
     """
 
     def __init__(self, user, metric, sensor):
         """
-        Konstruktor klasy Subscription.
+        Konstruktor klasy Subscription.\n
 
-        metric - monitorowane metryki
-        sensor - adres wraz z portem sensora
+        user - nazwa użytkownika\n
+        metric - monitorowane metryki\n
+        sensor - adres wraz z portem sensora\n
         """
         
         self.metric = metric
@@ -42,7 +59,7 @@ class Subscription:
 
     def get_user(self):
         """
-        Zwraca nazwe uzytkownika na ktorego subskrypcja zostala zarejestrowana.
+        Zwraca nazwę użytkownika na którego subskrypcja została zarejestrowana.
         """
         
         return self.user
@@ -50,15 +67,16 @@ class Subscription:
     
 class Monitor(Thread):
     """
-    Klasa monitora. Przechowuje ona informacje na temat zarejestrowanych sensorow oraz utworzonych subskrypcji.
+    Klasa monitora. Przechowuje ona informację na temat zarejestrowanych sensorów oraz utworzonych subskrypcji.
     """
 
     def __init__(self, delay = 5):
         """
-        Konstruktor klasy Monitor.
+        Konstruktor klasy Monitor.\n
 
-        delay - opoznienie z jakim wywolywane jest 'keep alive' do sensorow
+        delay - opóźnienie z jakim wywoływane jest 'keep alive' do sensorów\n
         """
+
         Thread.__init__(self)
         self.sensors = {}
         self.delay = delay
@@ -72,14 +90,14 @@ class Monitor(Thread):
 
     def add_sensor(self, host, port, hostname, cpu = True, ram = True, hdd = True):
         """
-        Rejestruje nowy sensor.
+        Rejestruje nowy sensor.\n
 
-        host - adres sensora
-        port - port sensora
-        hostname - nazwa sensora
-        cpu - informuje czy sensor monitoruje obciazenie cpu
-        ram - informuje czy sensor monitoruje zuzycie ramu
-        hdd - informuje czy sensor monitoruje dane o dyskach
+        host - adres sensora\n
+        port - port sensora\n
+        hostname - nazwa sensora\n
+        cpu - informuje czy sensor monitoruje obciażenie cpu\n
+        ram - informuje czy sensor monitoruje zużycie ramu\n
+        hdd - informuje czy sensor monitoruje dane o dyskach\n
         """
 
         try:
@@ -96,13 +114,15 @@ class Monitor(Thread):
 
     def del_sensor(self, host, port):
         """
-        Usuwa sensor z bazy danych.
+        Usuwa sensor z bazy danych.\n
 
-        host - adres sensora
-        port - port sensora
+        host - adres sensora\n
+        port - port sensora\n
         """
 
         self.sensors.pop((host, port))
+
+        db = None
 
         try:
             db = mysql.connector.Connect(**Config.dbinfo())
@@ -111,12 +131,13 @@ class Monitor(Thread):
         except Exception, e:
             print e
         finally:
-            db.close()        
+            if db:
+                db.close()        
 
     def keep_alive(self): 
         """
-        Sprawdza czy wszystkie zarejestrowane sensory sa nadal wlaczone i sprawne.
-        Jesli ktorys z sensorow nie odpowiada to zostaje on wyrzucony z listy.
+        Sprawdza czy wszystkie zarejestrowane sensory są nadal właczone i sprawne.
+        Jeśli ktoryś z sensorów nie odpowiada to zostaje on wyrzucony z listy.
         """
 
         scp = self.sensors.copy()
@@ -162,15 +183,20 @@ class Monitor(Thread):
 
     def create_subscription(self, user, metric, sensor, filename = "subscriptions.db"): 
         """
-        Tworzy nowa subskrypcje.
+        Tworzy nową subskrypcję.\n
 
-        user - nazwa uzytkownika
-        metric - monitorowane metryki
-        sensor - monitorowany sensor
-        filename - nazwa pliku z baza danych
+        user - nazwa użytkownika\n
+        metric - monitorowane metryki\n
+        sensor - monitorowany sensor\n
+        filename - nazwa pliku z bazą danych\n
         """
 
-        self.subscriptions[max(self.subscriptions) + 1] = Subscription(user, metric, sensor)
+        if len(self.subscriptions) == 0:
+            self.subscriptions[1] = Subscription(user, metric, sensor)
+        else:
+            self.subscriptions[max(self.subscriptions) + 1] = Subscription(user, metric, sensor)
+
+        con = None
 
         try: 
             con = sqlite3.connect(filename)
@@ -190,17 +216,19 @@ class Monitor(Thread):
 
     def delete_subscription(self, user, sid, filename = "subscriptions.db"):
         """
-        Usuwa subskrypcje.
+        Usuwa subskrypcję.\n
 
-        user - nazwa uzytkownika
-        sid - numer subskrypcji
-        filename - nazwa pliku z baza danych
+        user - nazwa użytkownika\n
+        sid - numer subskrypcji\n
+        filename - nazwa pliku z bazą danych\n
         """
 
         if not sid in self.subscriptions:
             raise KeyError
         if self.subscriptions[sid].get_user() != user:
             raise ValueError
+
+        con = None
 
         try: 
             con = sqlite3.connect(filename)
@@ -221,13 +249,14 @@ class Monitor(Thread):
 
     def load_subscriptions(self, filename = "subscriptions.db"):
         """
-        Laduje subskrypcje z bazy danych (SQLite). Jesli plik z baza nie istnieje to 
-        tworzy nowa baze oraz odpowiednie tabele.
+        Ładuje subskrypcję z bazy danych (SQLite). Jeśli plik z baza nie istnieje to 
+        tworzy nową bazę oraz odpowiednie tabele.\n
 
-        filename - nazwa pliku z baza danych
+        filename - nazwa pliku z bazą danych\n
         """
 
         exists = os.path.exists(filename)
+        con = None
 
         try: 
             con = sqlite3.connect(filename)
@@ -250,9 +279,9 @@ class Monitor(Thread):
 
     def subscription_list(self, user):
         """
-        Zwraca liste subskrypcji dla danego uzytkownika.
+        Zwraca listę subskrypcji dla danego użytkownika.\n
 
-        user - nazwa uzytkownika
+        user - nazwa użytkownika\n
         """
         
         sl = []
@@ -266,16 +295,16 @@ class Monitor(Thread):
 
     def get_data(self, user, sid): 
         """
-        Zwraca dane z sensora.
+        Zwraca dane z sensora.\n
 
-        user - nazwa uzytkownika
-        sid - numer subskrypcji
+        user - nazwa użytkownika\n
+        sid - numer subskrypcji\n
         """
 
         if not sid in self.subscriptions:
-            raise KeyError
+            raise WrongSubscriptionID
         if self.subscriptions[sid].get_user() != user:
-            raise ValueError
+            raise WrongUser
 
         host, port = self.subscriptions[sid].get_sensor()
         data = {}
@@ -292,7 +321,7 @@ class Monitor(Thread):
 
 class MonitorHTTP:
     """
-    Klasa serwera HTTP dla monitora.
+    Klasa serwera HTTP dla monitora.\n
     """
 
     app = Flask("monitor")
@@ -302,15 +331,21 @@ class MonitorHTTP:
     
     def __init__(self, port):
         """
-        Konstruktor klasy MonitorHTTP.
+        Konstruktor klasy MonitorHTTP.\n
 
-        port - port na ktorym ma zostac uruchomiony serwer
+        port - port na którym ma zostać uruchomiony serwer\n
         """
 
         self.port = port
 
     @app.route('/login/', methods=['GET', 'POST'])
     def login():
+        """
+        Loguje użytkownika na monitorze.\n
+        GET: Otwiera stronę z formularzem logowania.\n
+        POST: Pobiera nazwę użytkownika oraz loguje go na monitorze.\n
+        """
+
         if request.method == 'POST':
             try:
                 session['username'] = request.form['username']
@@ -326,8 +361,8 @@ class MonitorHTTP:
     @app.route('/sensors/', methods=['GET'])
     def sensors():
         """
-        Zwraca informacje o zarejestrowanych w monitorze sensorach.
-        Dostep: GET
+        Zwraca informację o zarejestrowanych w monitorze sensorach.\n
+        Dostęp: GET\n
         """
 
         return MonitorHTTP.monitor.get_sensors()
@@ -335,8 +370,8 @@ class MonitorHTTP:
     @app.route('/register/', methods=['POST'])
     def register():
         """
-        Rejestruje nowy sensor w monitorze.
-        Dostep: POST
+        Rejestruje nowy sensor w monitorze.\n
+        Dostęp: POST\n
         """
 
         MonitorHTTP.monitor.add_sensor(str(request.remote_addr), str(request.form['port']), str(request.form['hostname']),
@@ -344,12 +379,13 @@ class MonitorHTTP:
                                        str(request.form['hdd']) == '1')
         return MonitorHTTP.monitor.get_id()
 
-    @app.route('/subscribe/', methods=['GET']) 
+    @app.route('/subscribe/', methods=['GET', 'POST']) 
     def subscribe():
         """
-        Tworzy nowa subskrypcje. Wymaga wczesniejszego zalogowania.
-        Dostep: POST
+        Tworzy nowa subskrypcję. Wymaga wcześniejszego zalogowania.\n
+        Dostęp: POST\n
         """
+
         if 'username' in session:
             if request.method == 'GET':
                 sid = MonitorHTTP.monitor.create_subscription(session['username'], ['cpu', 'ram', 'hdd'], ('127.0.0.1', '5001')) 
@@ -366,69 +402,75 @@ class MonitorHTTP:
                 sid = MonitorHTTP.monitor.create_subscription(session['username'], metric, sensor) 
             return redirect('/subscriptions/' + str(sid) + '/')
         else:
-            return 'Nie jestes zalogowany!'
+            return "{\"error\" : \"Nie jesteś zalogowany!\"}"
 
     @app.route('/subscription_list/', methods=['GET']) 
     def subscription_list():
         """
-        Zwraca liste subskrypcji. Wymaga wczesniejszego zalogowania.
-        Dostep: GET
+        Zwraca listę subskrypcji. Wymaga wcześniejszego zalogowania.\n
+        Dostęp: GET\n
         """
 
         if 'username' in session:
             return MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
         else:
-            return 'Nie jestes zalogowany!'
+            return "{\"error\" : \"Nie jesteś zalogowany!\"}"
 
     @app.route('/subscriptions/<sid>/', methods=['GET', 'DELETE'])
     def subscriptions(sid):
         """
-        Wymaga wczesniejszego zalogowania.
-        GET: Zwraca odpowiednie dane z sensora przypisane do konkretnej subskrypcji.
-        DELETE: Usuwa subskrypcje.
+        Wymaga wcześniejszego zalogowania.\n
+        GET: Zwraca odpowiednie dane z sensora przypisane do konkretnej subskrypcji.\n
+        DELETE: Usuwa subskrypcję.\n
 
-        sid - numer subskrypcji
+        sid - numer subskrypcji\n
         """
 
         if 'username' not in session:
-            return 'Nie jestes zalogowany!'
+            return "{\"error\" : \"Nie jesteś zalogowany!\"}"
 
         try:
             if request.method == 'GET':
                 data = MonitorHTTP.monitor.get_data(session['username'], int(sid))
             else:
                 data = MonitorHTTP.monitor.delete_subscription(session['username'], int(sid))
-        except ValueError, e:
-            print e
+        except WrongUser, e:
+            print "Brak dostępu do subskrypcji przez danego użytkownika."
             abort(403)
-        except KeyError, e:
-            print e
+        except WrongSubscriptionID, e:
+            print "Nie istniejący numer subskrypcji."
             abort(404)
+        except KeyError, e:
+            print "Prawdopodobnie nastąpiła próba odwołania się do sensora, który nie jest zarejestrowany: %s."%e
         else:
             if request.method == 'GET':
                 return data.replace("'", "\"")
             else:
-                return "Subskrypcja zostala usunieta!"
+                return "{\"msg\" : \"Subskrypcja została usunięta!\"}"
 
     def db_register(self):
         """
         Dodaje informacje o nowym monitorze do katalogu.
         """
 
+        db = None
+
         try:
             db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
         except Exception, e:
-            print e
+            print "Database Error: %s"%e
         finally:
-            db.close()
+            if db:
+                db.close()
+            exit(-1)
 
     def start(self, debug = False):
         """
-        Uruchamia monitor oraz serwer HTTP.
+        Uruchamia monitor oraz serwer HTTP.\n
         
-        debug - ustala czy serwer HTTP ma byc uruchomiony w trybie debugowania.
+        debug - ustala czy serwer HTTP ma być uruchomiony w trybie debugowania\n
         """
 
         self.db_register()
