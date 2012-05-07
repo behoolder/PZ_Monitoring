@@ -461,10 +461,10 @@ class MonitorHTTP:
             cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
         except Exception, e:
             print "Database Error: %s"%e
+            exit(-1)
         finally:
             if db:
                 db.close()
-            exit(-1)
 
     def start(self, debug = False):
         """
