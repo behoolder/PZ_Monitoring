@@ -4,7 +4,7 @@ import os
 
 class SensorHTTP:
     '''
-    Klasa obslugujaca dzialanie serwera HTTP sensora
+    Klasa obsługująca działanie serwera HTTP sensora.
     '''
 
     app             = Flask(__name__)
@@ -13,9 +13,9 @@ class SensorHTTP:
 
     def __init__(self, sensor_port):
         '''
-        Konstruktor klasy SensorHTTP
+        Konstruktor klasy SensorHTTP.\n
         
-        sensor_port - port na ktorym uruchomiony zostanie sensor
+        sensor_port - port na którym uruchomiony zostanie sensor\n
         '''
         
         self.sensor_port = sensor_port
@@ -36,7 +36,7 @@ class SensorHTTP:
     @app.route("/keepalive/", methods=['GET'])
     def keepalive():
         '''
-        Zwraca informacje kontrolna dla monitora o dzialaniu
+        Zwraca informacje kontrolna dla monitora o działaniu.
         '''
         
         return 'OK'  
@@ -44,7 +44,7 @@ class SensorHTTP:
     @app.route("/cpu/", methods=['POST'])
     def get_cpu():
         '''
-        Zwraca informacje o zuzyciu procesora
+        Zwraca informacje o zużyciu procesora.
         '''
         
         SensorHTTP.check_monitor_id(request.form["id"])
@@ -62,7 +62,7 @@ class SensorHTTP:
     @app.route("/hdd/", methods=['POST'])
     def get_hdd():
         '''
-        Zwraca informacje o dysku twardym
+        Zwraca informacje o dysku twardym.
         '''
         
         SensorHTTP.check_monitor_id(request.form["id"])
@@ -71,28 +71,28 @@ class SensorHTTP:
     @app.route("/hostname/", methods=['GET'])
     def get_hostname():
         '''
-        Zwraca informacje o nazwie hosta
+        Zwraca informacje o nazwie hosta.
         '''
    
         return str(SensorHTTP.sensor.hostname())
 
     def get_metrics(self):
         '''
-        Zwraca informacje o nazwie hosta lokalnie
+        Zwraca informacje o nazwie hosta lokalnie.
         '''
         
         return SensorHTTP.sensor.metrics()
 
     def start(self):
         '''
-        Uruchamia dzialanie serwera HTTP
+        Uruchamia działanie serwera HTTP.
         '''
         
         SensorHTTP.app.run(host = '0.0.0.0', port = int(self.sensor_port))
 
     def check_monitor_id(monitor_id):
         '''
-        Sprawdza czy monitor moze pobrac dane z sensora, porownujac ID
+        Sprawdza czy monitor może pobrać dane z sensora, porównując ID.
         '''
 
         if not monitor_id == SensorHTTP.monitor_id:

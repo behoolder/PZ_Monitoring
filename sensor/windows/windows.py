@@ -4,15 +4,18 @@ from os import getenv
 
 class Windows:
     """
-    Klasa ta zawiera szereg metod informujacych o obciazeniu systemu.
+    Klasa ta zawiera szereg metod informujących o obciążeniu systemu.
     """
 
     def __init__(self):
+        """
+        Konstruktor klasy Windows.
+        """
         self.data = SystemInfo()
 
     def cpu_usage(self):
         """
-        Zwraca informacje na temat obciazenia CPU.
+        Zwraca informacje na temat obciążenia CPU.
         """
         cpu = {}
 
@@ -42,7 +45,7 @@ class Windows:
 
     def get_data(self):
         """
-        Zwraca wszystkie informacje
+        Zwraca wszystkie informacje.
         """
         self.data.set_ram(self.ram_usage())
         self.data.set_cpu(self.cpu_usage())
@@ -52,14 +55,13 @@ class Windows:
 
     def metrics(self):
         """
-        Zwraca metryki
+        Zwraca metryki.
         """
         return {"hostname" : getenv("COMPUTERNAME"), "cpu" : "1", "ram" : "1", "hdd" : "1"}
 
     def ram_usage(self):
         """
-        Zwraca informacje na temat calkowitej, uzytej oraz wolnej ilosci
-        pamieci RAM.
+        Zwraca informacje na temat całkowitej, użytej oraz wolnej ilości pamięci RAM.
         """
         myWMI = WMI()
 

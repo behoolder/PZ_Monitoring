@@ -4,15 +4,15 @@ import urllib2
 
 class Sensor:
     '''
-    Klasa uruchamiajaca sensor, sprawdza polaczenie z monitorem i w zaleznosci od wyniku, uruchamia wlasciwe dzialanie sensora, lub nie.
+    Klasa uruchamiająca sensor, sprawdza połaczenie z monitorem i w zależności od wyniku, uruchamia właściwe działanie sensora, lub nie.
     '''
     
     def __init__(self, sensor_port, monitor_address):
         '''
-        Konstruktor klasy Sensor
+        Konstruktor klasy Sensor.\n
         
-        sensor_port     - port na ktorym uruchomiony zostanie sensor
-        monitor_address - Adres IP monitora, ktory bedzie komunikowac sie z sensorem (IP:PORT)
+        sensor_port     - port na którym uruchomiony zostanie sensor\n
+        monitor_address - Adres IP monitora, który będzie komunikować sie z sensorem (IP:PORT)\n
         '''
         
         self.sensor_port     = sensor_port
@@ -21,7 +21,7 @@ class Sensor:
         
     def start(self):
         '''
-        Inicjuje dzialanie sensora, sprawdza czy monitor istnieje
+        Inicjuje działanie sensora, sprawdza czy monitor istnieje.
         '''
         
         try :
