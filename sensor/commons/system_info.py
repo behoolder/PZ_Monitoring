@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 class SystemInfo:
     """
     Klasa jest kontenerem przechowującym informacje o obciążeniu systemu.

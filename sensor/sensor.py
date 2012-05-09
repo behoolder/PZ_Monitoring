@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 from sensorHTTP import SensorHTTP
 import urllib
 import urllib2

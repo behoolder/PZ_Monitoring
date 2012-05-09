@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 from sensor.commons.system_info import SystemInfo
 from wmi import WMI
 from os import getenv
