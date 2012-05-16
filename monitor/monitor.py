@@ -9,7 +9,7 @@ import os
 import mysql.connector
 from config import Config
 from threading import Thread
-from flask import Flask, request, redirect, abort, session, escape
+from flask import Flask, request, redirect, abort, session, escape, make_response
 
 class WrongSubscriptionID(Exception):
     """
@@ -349,9 +349,14 @@ class MonitorHTTP:
         if request.method == 'POST':
             try:
                 session['username'] = request.form['username']
-                return redirect('/subscription_list/')
+                response = make_response()
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                response.headers['Location'] = '/subscription_list/'
+                response.status_code = 302
             except Exception, e:
                 print e
+            else:
+                return response
         else:
             return '''<form action="" method="post">
                   <p><input type=text name=username>
@@ -364,8 +369,15 @@ class MonitorHTTP:
         Zwraca informację o zarejestrowanych w monitorze sensorach.\n
         Dostęp: GET\n
         """
-
-        return MonitorHTTP.monitor.get_sensors()
+        
+        try:
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.data = MonitorHTTP.monitor.get_sensors()
+        except Exception, e:
+            print e
+        else:
+            return response
 
     @app.route('/register/', methods=['POST'])
     def register():
@@ -374,22 +386,31 @@ class MonitorHTTP:
         Dostęp: POST\n
         """
 
-        MonitorHTTP.monitor.add_sensor(str(request.remote_addr), str(request.form['port']), str(request.form['hostname']),
-                                       str(request.form['cpu']) == '1', str(request.form['ram']) == '1', 
-                                       str(request.form['hdd']) == '1')
-        return MonitorHTTP.monitor.get_id()
+        try:
+            MonitorHTTP.monitor.add_sensor(str(request.remote_addr), str(request.form['port']), str(request.form['hostname']),
+                                           str(request.form['cpu']) == '1', str(request.form['ram']) == '1', 
+                                           str(request.form['hdd']) == '1')
 
-    @app.route('/subscribe/', methods=['GET', 'POST']) 
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.data = MonitorHTTP.monitor.get_id()
+        except Exception, e:
+            print e
+        else:
+            return response
+
+    @app.route('/subscribe/', methods=['POST']) 
     def subscribe():
         """
         Tworzy nowa subskrypcję. Wymaga wcześniejszego zalogowania.\n
         Dostęp: POST\n
         """
 
-        if 'username' in session:
-            if request.method == 'GET':
-                sid = MonitorHTTP.monitor.create_subscription(session['username'], ['cpu', 'ram', 'hdd'], ('127.0.0.1', '5001')) 
-            if request.method == 'POST':
+        try:
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+
+            if 'username' in session:
                 sensor = (str(request.form['host']), str(request.form['port']))
                 metric = []
                 if str(request.form['cpu']) == '1':
@@ -400,9 +421,15 @@ class MonitorHTTP:
                     metric.append('hdd')
 
                 sid = MonitorHTTP.monitor.create_subscription(session['username'], metric, sensor) 
-            return redirect('/subscriptions/' + str(sid) + '/')
+            
+                response.headers['Location'] = '/subscriptions/' + str(sid) + '/'
+                response.status_code = 302
+            else:
+                response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
+        except Exception, e:
+            print e
         else:
-            return "{\"error\" : \"Nie jesteś zalogowany!\"}"
+            return response
 
     @app.route('/subscription_list/', methods=['GET']) 
     def subscription_list():
@@ -411,10 +438,17 @@ class MonitorHTTP:
         Dostęp: GET\n
         """
 
-        if 'username' in session:
-            return MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
+        try:
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            if 'username' in session:
+                response.data = MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
+            else:
+                response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
+        except Exception, e:
+            print e
         else:
-            return "{\"error\" : \"Nie jesteś zalogowany!\"}"
+            return response
 
     @app.route('/subscriptions/<sid>/', methods=['GET', 'DELETE'])
     def subscriptions(sid):
@@ -426,27 +460,31 @@ class MonitorHTTP:
         sid - numer subskrypcji\n
         """
 
-        if 'username' not in session:
-            return "{\"error\" : \"Nie jesteś zalogowany!\"}"
-
         try:
-            if request.method == 'GET':
-                data = MonitorHTTP.monitor.get_data(session['username'], int(sid))
-            else:
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+
+            if 'username' not in session:
+                response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
+            elif request.method == 'GET':
+                response.data = MonitorHTTP.monitor.get_data(session['username'], int(sid)).replace("'", "\"")
+            elif request.method == 'DELETE':
                 data = MonitorHTTP.monitor.delete_subscription(session['username'], int(sid))
+                response.data = "{\"msg\" : \"Subskrypcja została usunięta!\"}"
         except WrongUser, e:
             print "Brak dostępu do subskrypcji przez danego użytkownika."
+            print e
             abort(403)
         except WrongSubscriptionID, e:
             print "Nie istniejący numer subskrypcji."
+            print e
             abort(404)
         except KeyError, e:
             print "Prawdopodobnie nastąpiła próba odwołania się do sensora, który nie jest zarejestrowany: %s."%e
+        except Exception, e:
+            print e
         else:
-            if request.method == 'GET':
-                return data.replace("'", "\"")
-            else:
-                return "{\"msg\" : \"Subskrypcja została usunięta!\"}"
+            return response
 
     def db_register(self):
         """
@@ -475,7 +513,7 @@ class MonitorHTTP:
 
         self.db_register()
 
-#        MonitorHTTP.monitor.start()
+        MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug
         MonitorHTTP.app.run(host = "0.0.0.0", port = self.port)
 
