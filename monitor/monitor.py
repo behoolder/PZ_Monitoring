@@ -350,9 +350,14 @@ class MonitorHTTP:
             try:
                 session['username'] = request.form['username']
                 response = make_response()
-                response.headers['Access-Control-Allow-Origin'] = '*'
-                response.headers['Location'] = '/subscription_list/'
-                response.status_code = 302
+                if 'Origin' in request.headers:
+                    response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+                else:
+                    response.headers['Access-Control-Allow-Origin'] = '*'
+                response.headers['Access-Control-Allow-Credentials'] = 'true' 
+#                response.headers['Location'] = '/subscription_list/'
+#                response.status_code = 302
+                response.data = "{\"msg\" : \"Zalogowano pomyślnie.\"}"
             except Exception, e:
                 print e
             else:
@@ -372,7 +377,11 @@ class MonitorHTTP:
         
         try:
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true' 
             response.data = MonitorHTTP.monitor.get_sensors()
         except Exception, e:
             print e
@@ -392,7 +401,11 @@ class MonitorHTTP:
                                            str(request.form['hdd']) == '1')
 
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true' 
             response.data = MonitorHTTP.monitor.get_id()
         except Exception, e:
             print e
@@ -408,7 +421,11 @@ class MonitorHTTP:
 
         try:
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true' 
 
             if 'username' in session:
                 sensor = (str(request.form['host']), str(request.form['port']))
@@ -422,8 +439,9 @@ class MonitorHTTP:
 
                 sid = MonitorHTTP.monitor.create_subscription(session['username'], metric, sensor) 
             
-                response.headers['Location'] = '/subscriptions/' + str(sid) + '/'
-                response.status_code = 302
+#                response.headers['Location'] = '/subscriptions/' + str(sid) + '/'
+#                response.status_code = 302
+                response.data = "{\"msg\" : \"Subskrypcja została utworzona.\"}"
             else:
                 response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
         except Exception, e:
@@ -440,7 +458,11 @@ class MonitorHTTP:
 
         try:
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true' 
             if 'username' in session:
                 response.data = MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
             else:
@@ -462,7 +484,11 @@ class MonitorHTTP:
 
         try:
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true' 
 
             if 'username' not in session:
                 response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
