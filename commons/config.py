@@ -8,7 +8,7 @@ class Config:
     mysql.connector.Connect(**Config.dbinfo())\n
     """
     
-    HOST = 'prgzsp'
+    HOST = 'localhost'
     DATABASE = 'prgzspdb'
     USER = 'root'
     PASSWORD = 'root'

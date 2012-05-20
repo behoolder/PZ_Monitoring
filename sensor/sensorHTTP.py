@@ -1,7 +1,6 @@
 #-*- coding: utf-8 -*-
 
-from flask import request
-from flask import Flask
+from flask import Flask, request, abort
 import os
 
 class SensorHTTP:
@@ -43,31 +42,33 @@ class SensorHTTP:
         
         return 'OK'  
 
-    @app.route("/cpu/", methods=['POST'])
+    @app.route("/cpu/", methods=['GET'])
     def get_cpu():
         '''
         Zwraca informacje o zużyciu procesora.
         '''
         
-        SensorHTTP.check_monitor_id(request.form["id"])
+        SensorHTTP.check_monitor_id(request.headers["id"])
         return str(SensorHTTP.sensor.cpu_usage())
                 
-    @app.route("/ram/", methods=['POST'])
+    @app.route("/ram/", methods=['GET'])
     def get_ram():
         '''
         Zwraca informacje o zuzyciu pamieci
         '''
         
-        SensorHTTP.check_monitor_id(request.form["id"])
+        SensorHTTP.check_monitor_id(request.headers["id"])
         return str(SensorHTTP.sensor.ram_usage())
                 
-    @app.route("/hdd/", methods=['POST'])
+    @app.route("/hdd/", methods=['GET'])
     def get_hdd():
         '''
         Zwraca informacje o dysku twardym.
         '''
-        
-        SensorHTTP.check_monitor_id(request.form["id"])
+        try:
+            SensorHTTP.check_monitor_id(request.headers["id"])
+        except Exception, e:
+            print e
         return str(SensorHTTP.sensor.disk_space())
 
     @app.route("/hostname/", methods=['GET'])
@@ -98,9 +99,8 @@ class SensorHTTP:
         '''
 
         if not monitor_id == SensorHTTP.monitor_id:
-            SensorHTTP.app.abort(403)
-        else:
-            pass
+            abort(403)
+
     check_monitor_id = staticmethod(check_monitor_id)
 
 if __name__ == "__main__":

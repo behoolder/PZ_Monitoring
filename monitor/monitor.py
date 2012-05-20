@@ -7,7 +7,7 @@ import uuid
 import sqlite3
 import os
 import mysql.connector
-from config import Config
+from commons.config import Config
 from threading import Thread
 from flask import Flask, request, redirect, abort, session, escape, make_response
 
@@ -104,6 +104,7 @@ class Monitor(Thread):
             db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("INSERT INTO Sensors(monitorUUID, name, address, port, cpu, ram, hdd) VALUES(%s, %s, %s, %s, %s, %s, %s)", (self.get_id(), hostname, host, port, cpu, ram, hdd))
+            db.commit()
         except Exception, e:
             print e
         finally:
@@ -128,6 +129,7 @@ class Monitor(Thread):
             db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("DELETE FROM Sensors WHERE monitorUUID = %s AND address = %s AND port = %s", (self.get_id(), host, port))
+            db.commit()
         except Exception, e:
             print e
         finally:
@@ -224,9 +226,9 @@ class Monitor(Thread):
         """
 
         if not sid in self.subscriptions:
-            raise KeyError
+            raise WrongSubscriptionID
         if self.subscriptions[sid].get_user() != user:
-            raise ValueError
+            raise WrongUser
 
         con = None
 
@@ -234,7 +236,7 @@ class Monitor(Thread):
             con = sqlite3.connect(filename)
             cur = con.cursor()
 
-            cur.execute("DELETE FROM subscriptions WHERE id = ?", sid)
+            cur.execute("DELETE FROM subscriptions WHERE id = ?", str(sid))
 
             con.commit()
 
@@ -310,7 +312,8 @@ class Monitor(Thread):
         data = {}
 
         for metric in self.subscriptions[sid].get_metric():
-            request  = urllib2.Request("http://%s:%s/%s/"%(host, port, metric), urllib.urlencode({'id' : self.id}))
+            request  = urllib2.Request("http://%s:%s/%s/"%(host, port, metric))
+            request.add_header('id', self.id)
             response = urllib2.urlopen(request)
 
             if response.code == 200:
@@ -438,10 +441,7 @@ class MonitorHTTP:
                     metric.append('hdd')
 
                 sid = MonitorHTTP.monitor.create_subscription(session['username'], metric, sensor) 
-            
-#                response.headers['Location'] = '/subscriptions/' + str(sid) + '/'
-#                response.status_code = 302
-                response.data = "{\"msg\" : \"Subskrypcja została utworzona.\"}"
+                response.data = "{\"id\" : \"" + str(sid) + "\"}"
             else:
                 response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
         except Exception, e:
@@ -507,6 +507,7 @@ class MonitorHTTP:
             abort(404)
         except KeyError, e:
             print "Prawdopodobnie nastąpiła próba odwołania się do sensora, który nie jest zarejestrowany: %s."%e
+            abort(404)
         except Exception, e:
             print e
         else:
@@ -523,6 +524,7 @@ class MonitorHTTP:
             db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
             cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
+            db.commit()
         except Exception, e:
             print "Database Error: %s"%e
             exit(-1)
