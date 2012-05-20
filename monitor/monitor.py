@@ -6,8 +6,6 @@ import time
 import uuid
 import sqlite3
 import os
-import mysql.connector
-from commons.config import Config
 from threading import Thread
 from flask import Flask, request, redirect, abort, session, escape, make_response
 
@@ -101,40 +99,27 @@ class Monitor(Thread):
         """
 
         try:
-            db = mysql.connector.Connect(**Config.dbinfo())
-            cursor = db.cursor()
-            cursor.execute("INSERT INTO Sensors(monitorUUID, name, address, port, cpu, ram, hdd) VALUES(%s, %s, %s, %s, %s, %s, %s)", (self.get_id(), hostname, host, port, cpu, ram, hdd))
-            db.commit()
+            data = urllib.urlencode({'port' : port, 'uuid' : self.get_id(), 'host' : host, 'hostname' : hostname})
+            request  = urllib2.Request("http://%s/sensors/"%(self.catalog), data)
+            response = urllib2.urlopen(request)
+
+            if response.code != 200:
+                raise Exception
         except Exception, e:
             print e
-        finally:
-            db.close()        
 
         self.sensors[(host, port)] = hostname
         print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
 
     def del_sensor(self, host, port):
         """
-        Usuwa sensor z bazy danych.\n
+        Usuwa sensor z monitora.\n
 
         host - adres sensora\n
         port - port sensora\n
         """
 
         self.sensors.pop((host, port))
-
-        db = None
-
-        try:
-            db = mysql.connector.Connect(**Config.dbinfo())
-            cursor = db.cursor()
-            cursor.execute("DELETE FROM Sensors WHERE monitorUUID = %s AND address = %s AND port = %s", (self.get_id(), host, port))
-            db.commit()
-        except Exception, e:
-            print e
-        finally:
-            if db:
-                db.close()        
 
     def keep_alive(self): 
         """
@@ -148,9 +133,7 @@ class Monitor(Thread):
                 response = urllib2.urlopen("http://%s:%s/keepalive/"%(host, port))
                 
                 if response.msg != "OK" or response.code != 200:
-                    print "Sensor %s:%s nie odpowiada"%(host, port)
-                    self.del_sensor(host, port)
-                    continue
+                    raise Exception
 
                 print "Sensor %s:%s dziala poprawnie"%(host, port)
                         
@@ -321,6 +304,32 @@ class Monitor(Thread):
 
         return str({str(self.sensors[(host, port)]) : data})
 
+    def set_catalog(self, catalog):
+        """
+        Ustawia dane (adres i port) katalogu z którym komunikuje się monitor.\n
+        """
+
+        self.catalog = catalog
+
+    def db_register(self, port):
+        """
+        Wysyła informację do katalogu w celu zarejestrownia nowego monitora.\n
+
+        port - port monitora.\n
+        """
+
+        try:
+            data = urllib.urlencode({'port' : port, 'uuid' : self.get_id()})
+            request  = urllib2.Request("http://%s/monitors/"%(self.catalog), data)
+            response = urllib2.urlopen(request)
+
+            if response.code != 200:
+                raise Exception
+        except Exception, e:
+            print e
+            print "Nie udalo sie polaczyc z katalogiem!"
+            exit(-1)
+
 
 class MonitorHTTP:
     """
@@ -332,7 +341,7 @@ class MonitorHTTP:
 
     app.secret_key = os.urandom(24)
     
-    def __init__(self, port):
+    def __init__(self, port, catalog):
         """
         Konstruktor klasy MonitorHTTP.\n
 
@@ -340,6 +349,15 @@ class MonitorHTTP:
         """
 
         self.port = port
+        self.catalog = catalog
+
+    @app.route("/keepalive/", methods=['GET'])
+    def keepalive():
+        '''
+        Zwraca informacje kontrolna o działaniu.
+        '''
+        
+        return 'OK'  
 
     @app.route('/login/', methods=['GET', 'POST'])
     def login():
@@ -513,25 +531,6 @@ class MonitorHTTP:
         else:
             return response
 
-    def db_register(self):
-        """
-        Dodaje informacje o nowym monitorze do katalogu.
-        """
-
-        db = None
-
-        try:
-            db = mysql.connector.Connect(**Config.dbinfo())
-            cursor = db.cursor()
-            cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
-            db.commit()
-        except Exception, e:
-            print "Database Error: %s"%e
-            exit(-1)
-        finally:
-            if db:
-                db.close()
-
     def start(self, debug = False):
         """
         Uruchamia monitor oraz serwer HTTP.\n
@@ -539,7 +538,8 @@ class MonitorHTTP:
         debug - ustala czy serwer HTTP ma być uruchomiony w trybie debugowania\n
         """
 
-        self.db_register()
+        MonitorHTTP.monitor.set_catalog(self.catalog)
+        MonitorHTTP.monitor.db_register(self.port)
 
         MonitorHTTP.monitor.start()
         MonitorHTTP.app.debug = debug

@@ -37,7 +37,7 @@ class SensorHTTP:
     @app.route("/keepalive/", methods=['GET'])
     def keepalive():
         '''
-        Zwraca informacje kontrolna dla monitora o działaniu.
+        Zwraca informacje kontrolna o działaniu.
         '''
         
         return 'OK'  
