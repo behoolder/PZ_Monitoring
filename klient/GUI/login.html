@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script type="text/javascript" src="JS/CoreFunctions.js"></script>
+        <script type="text/javascript">
+            var xmlhttp = createRequest();
+            function parseMonitorList(string)
+            {
+                var arrayTemp = string.split(';');
+                var array = new Array();
+                for(var i = 0; i < arrayTemp.length; i++)
+                {
+                    if(arrayTemp[i] != '')
+                        array.push("http://" + arrayTemp[i]);
+                }
+                return array;
+            }
+            function getResult()
+            {
+                if (xmlhttp.readyState==4)
+                {
+                    if(xmlhttp.status==200)
+                    {
+                        window.location = "index.php";
+                    }
+                    else if(xmlhttp.status==0)
+                    {
+                        var target = document.getElementById("error");
+                        target.innerHTML = "ERROR: <BR>Network Error";
+                    }
+                    else
+                    {
+                        var target = document.getElementById("error");
+                        target.innerHTML = "ERROR: <BR>"
+                        target.innerHTML += xmlhttp.status + " " + xmlhttp.responseText;
+                        target.style.visibility = "visible";
+                    }
+                }
+            }
+            
+            function logon()
+            {
+                var params = "username=" + document.getElementById("login").value;
+                var url = "proxy/proxy.php?method=POST&url=";
+                url += document.getElementById("monitorUrl").value + '/login/';
+                url += "&postdata=" + params;
+                xmlhttp.open("GET", url, true);
+                xmlhttp.onreadystatechange = getResult;
+                xmlhttp.send();
+                createCookie("username", document.getElementById("login").value, 1);
+                createCookie("monitor", document.getElementById("monitorUrl").value, 1);
+                //document.cookie=params;
+                //document.cookie="monitor="+document.getElementById("monitorUrl").value;
+                
+            }
+            function getMonitorsList()
+            {
+                if (xmlhttp.readyState==4)
+                {
+                    if(xmlhttp.status==200)
+                    {
+                        var option;
+                        var select = document.getElementById("monitorUrl");
+                        var tempArray = parseMonitorList(xmlhttp.responseText);
+                        for(var i = 0; i < tempArray.length; i++)
+                        {
+                            option = document.createElement("option");
+                            option.appendChild(document.createTextNode(tempArray[i]));
+                            select.appendChild(option);
+                        }
+                    }
+                    else if(xmlhttp.status==0)
+                    {
+                        var target = document.getElementById("error");
+                        target.innerHTML = "ERROR: <BR>Network Error";
+                    }
+                    else
+                    {
+                        var target = document.getElementById("error");
+                        target.innerHTML = "ERROR: <BR>"
+                        target.innerHTML += xmlhttp.status + " " + xmlhttp.responseText;
+                        target.style.visibility = "visible";
+                    }
+                }
+            }
+            function bindDataToSelect()
+            {
+                var url = "getMonitorsList.php?catalog=";
+                url += document.getElementById("catalogUrl").value +"/monitors/";
+                xmlhttp.open("GET", url, true);
+                xmlhttp.onreadystatechange = getMonitorsList;
+                xmlhttp.send();
+            }
+        </script>
+    </head>
+    <body>
+        <div id ='error' style="visibility: none"></div>
+        <div id ='header'>
+            <h2>Witam!</h2>
+            <p>Nie jesteś zalogowany podaj użytkownika i adres monitora</p></div>
+        <form>
+            <fieldset>
+                <legend>Login</legend>
+                <label>Adres katalogu:</label>
+                <input id="catalogUrl" type="text" name = "monitorUrl" value="http://localhost:1000">
+                <button type="button" id="bindData" onclick="bindDataToSelect()">Szukaj</button>
+                <br>
+                <label>Adres monitora:</label>
+                <select id="monitorUrl" name="monitorUrl" size="1">
+                </select><br>
+                <label>Użytkownik</label>
+                <input id="login" type="text" name="login" value="test"><br>
+                <button type="button" id="submitButton" onclick="logon()">Login</button>
+            </fieldset>
+        </form>
+        <div id ="myDiv" style="visibility: visible"></div>
+    </body>
+</html>
