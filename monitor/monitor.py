@@ -500,7 +500,7 @@ class MonitorHTTP:
                 if request.method == 'GET':
                     response.data = MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
                 else:
-                    if MonitorHTTP.monitor.is_available(session['username'], str(request.form['sid']))
+                    if MonitorHTTP.monitor.is_available(session['username'], str(request.form['sid'])):
                         response.data = "{\"sid\" : \"%s\", \"available\" : \"true\"}" % (str(request.form['sid']), )
                     else:
                         response.data = "{\"sid\" : \"%s\", \"available\" : \"false\"}" % (str(request.form['sid']), )
