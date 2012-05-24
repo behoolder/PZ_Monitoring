@@ -304,6 +304,21 @@ class Monitor(Thread):
 
         return str({str(self.sensors[(host, port)]) : data})
 
+    def is_available(self, user, sid):
+        """
+        Sprawdza czy subskrypcja o numerze sid istnieje oraz czy jest dostępna dla użytkownika user.\n
+
+        user - nazwa użytkownika\n
+        sid - numer subskrypcji\n
+        """
+        
+        if not sid in self.subscriptions:
+            return False
+        if self.subscriptions[sid].get_user() != user:
+            return False
+
+        return True
+
     def set_catalog(self, catalog):
         """
         Ustawia dane (adres i port) katalogu z którym komunikuje się monitor.\n
@@ -467,11 +482,11 @@ class MonitorHTTP:
         else:
             return response
 
-    @app.route('/subscription_list/', methods=['GET']) 
+    @app.route('/subscription_list/', methods=['GET', 'POST']) 
     def subscription_list():
         """
-        Zwraca listę subskrypcji. Wymaga wcześniejszego zalogowania.\n
-        Dostęp: GET\n
+        GET: Zwraca listę subskrypcji. Wymaga wcześniejszego zalogowania.\n
+        POST: Sprawdza czy dana subskrypcja istnieje.\n
         """
 
         try:
@@ -482,7 +497,13 @@ class MonitorHTTP:
                 response.headers['Access-Control-Allow-Origin'] = '*'
             response.headers['Access-Control-Allow-Credentials'] = 'true' 
             if 'username' in session:
-                response.data = MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
+                if request.method == 'GET':
+                    response.data = MonitorHTTP.monitor.subscription_list(session['username']).replace("'", "\"")
+                else:
+                    if MonitorHTTP.monitor.is_available(session['username'], str(request.form['sid']))
+                        response.data = "{\"sid\" : \"%s\", \"available\" : \"true\"}" % (str(request.form['sid']), )
+                    else:
+                        response.data = "{\"sid\" : \"%s\", \"available\" : \"false\"}" % (str(request.form['sid']), )
             else:
                 response.data = "{\"error\" : \"Nie jesteś zalogowany!\"}"
         except Exception, e:

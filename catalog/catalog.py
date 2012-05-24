@@ -86,6 +86,12 @@ class Catalog(Thread):
         try:
             db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
+            #Usuniecie ewentualnych duplikatow
+            cursor.execute("SELECT monitorID, uuid FROM Monitors WHERE address = %s AND port = %s", (address, port))
+            for row in cursor.fetchall():
+                cursor.execute("DELETE FROM Monitors WHERE monitorID = %s", (row[0],))
+                cursor.execute("DELETE FROM Sensors WHERE monitorUUID = %s", (row[1],))
+
 #            cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(SUBSTRING_INDEX((SELECT host FROM information_schema.processlist WHERE ID=CONNECTION_ID()), ':', 1), %s, %s)", (self.port, MonitorHTTP.monitor.get_id()))
             cursor.execute("INSERT INTO Monitors(address, port, uuid) VALUES(%s, %s, %s)", (address, port, uuid))
             db.commit()
