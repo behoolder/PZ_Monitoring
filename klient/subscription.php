@@ -1,12 +1,9 @@
 <?php
-    if(isset($_COOKIE["username"]) && isset($_COOKIE["monitor"]) && isset($_COOKIE["session"]))
-    {
-        
-    }
-    else
-    {
-        header('Location: login.html');
-    }
+include("checkLogin.php");
+if(!checkLogin())
+{
+    header('Location: login.html');
+}
 ?>
 
 <!DOCTYPE html>
@@ -24,7 +21,7 @@
                 {
                     if(this.status==200)
                     {
-                        printTable(this.responseText);
+                        document.getElementById("TableBody").innerHTML = this.responseText;
                     }
                     else
                     {
@@ -37,39 +34,11 @@
             }
             function getSubscriptions()
             {
-                url = "proxy/proxy.php?method=GET&url="
-                url += readCookie("monitor") + '/subscription_list/';
+                var url = "Subscriptions/getSubscriptions.php?user=" + readCookie("username");
                 xmlhttp.open("GET", url, true);
                 xmlhttp.onreadystatechange = getSubscriptionsResult;
                 xmlhttp.withCredentials = "true";
                 xmlhttp.send();
-            }
-            function getPrintTableResult()
-            {
-                if (this.readyState==4)
-                {
-                    if(this.status==200)
-                    {
-                        document.getElementById("TableBody").innerHTML = this.responseText;
-                    }
-                    else
-                    {
-                        var target = document.getElementById("Error");
-                        target.innerHTML = "ERROR: <BR>"
-                        target.innerHTML += this.status + " " + this.responseText;
-                        target.style.visibility = "visible";
-                    }
-                }
-            }
-            function printTable(string)
-            {
-                var xmlhttp1 = createRequest();
-                var url = "ParseJSONtoTable.php?user=" + readCookie("username") + "&subscr=" + string;
-                //var params = "user=" + readCookie("username") + "&subscr=" + string;
-                xmlhttp1.open("get", url, true);
-                xmlhttp1.onreadystatechange = getPrintTableResult;
-                xmlhttp1.withCredentials = "true";
-                xmlhttp1.send();
             }
             function getRemoveResult()
             {
@@ -90,15 +59,13 @@
             }
             function removeSubscription()
             {
-                var url = "RemoveSubscription.php?monitor=" + readCookie("monitor") + "&sid=";
-                //var url1 = readCookie("monitor") + "/subscriptions/";
+                var url = "Subscriptions/removeSubscription.php?monitor=" + readCookie("monitor") + "&sid=";
                 var inputs = document.getElementsByTagName("input");
                 for(var i = 0; i < inputs.length; i++)
                 {
                     if(inputs[i].checked == true)
                     {
                         url += inputs[i].value;
-                        //url1 += inputs[i].value + '/';
                         break;
                     }
                 }
@@ -119,7 +86,7 @@
                         break;
                     }
                 }
-                window.location = "graph.php?sid=" + sid;
+                window.location = "Graph/graph.php?sid=" + sid;
             }
         </script>
     </head>

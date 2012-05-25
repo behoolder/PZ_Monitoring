@@ -1,13 +1,9 @@
 <?php
-    if(isset($_COOKIE["username"]) && isset($_COOKIE["monitor"]) && isset($_COOKIE["session"]))
-    {
-        
-    }
-    else
-    {
-        //echo "username=".$_COOKIE["username"]."monitor=".$_COOKIE["monitor"]."session=".$_COOKIE["session"];
-        header('Location: login.html');
-    }
+include("checkLogin.php");
+if(!checkLogin())
+{
+    header('Location: login.html');
+}
 ?>
 
 <!DOCTYPE html>

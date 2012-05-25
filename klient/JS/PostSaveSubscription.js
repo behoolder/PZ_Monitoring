@@ -1,11 +1,11 @@
 var xmlhttprequest = createRequest();
 
-function saveSubscription(string)
+function saveSubscription(string, metric, sensor)
 {
     var xmlhttprequest = createRequest();
     var user = readCookie("username");
-    var params = "user=" + user + "&subscr=" + string;
-    var url = "SaveSubscription.php?" + params;
+    var params = "user=" + user + "&subscr=" + string + "&metric=" + metric + "&sensor=" + sensor;
+    var url = "Subscriptions/saveSubscription.php?" + params;
     xmlhttprequest.open("GET", url, true);
     xmlhttprequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     xmlhttprequest.onreadystatechange = getSubscriptionResult;

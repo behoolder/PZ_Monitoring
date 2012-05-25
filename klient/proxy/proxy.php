@@ -9,11 +9,6 @@ if(!isset($_GET['method']))
     echo "Error: Nie podales metody";
     exit();
 }
-/*if(!isset($_COOKIE["session"]))
-{
-    echo "Error: Nie jesteś zalogowany";
-    exit();
-}*/
 
 $responseMessage = new HttpMessage();
 
@@ -63,7 +58,6 @@ switch(strtolower($_GET['method']))
             $responseMessage->send();
         } catch (HttpException $ex)
         {
-            //echo $ex->getMessage();
             $responseMessage->setType(HttpMessage::TYPE_RESPONSE);
             $responseMessage->setBody($ex->getMessage());
             $responseMessage->setResponseCode(404);

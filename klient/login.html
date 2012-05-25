@@ -43,7 +43,7 @@
             function logon()
             {
                 var params = "username=" + document.getElementById("login").value;
-                var url = "proxy/proxy.php?method=POST&url=";
+                var url = "Proxy/proxy.php?method=POST&url=";
                 url += document.getElementById("monitorUrl").value + '/login/';
                 url += "&postdata=" + params;
                 createCookie("username", document.getElementById("login").value, 1);

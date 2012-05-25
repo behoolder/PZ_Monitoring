@@ -1,12 +1,9 @@
 <?php
-    if(isset($_COOKIE["username"]) && isset($_COOKIE["monitor"]) && isset($_COOKIE["session"]))
-    {
-        
-    }
-    else
-    {
-        header('Location: login.html');
-    }
+include("checkLogin.php");
+if(!checkLogin())
+{
+    header('Location: login.html');
+}
 ?>
 
 <!DOCTYPE html>
@@ -75,7 +72,8 @@
                 {
                     if(this.status==200)
                     {
-                        saveSubscription(this.responseText);
+                        //saveSubscription(this.responseText);
+                        alert("Subskrypcja zapisana!");
                     }
                     else
                     {
@@ -126,9 +124,10 @@
             }
             function getSensors()
             {
-                var url = readCookie("monitor") + '/sensors/';
+                var url = "Proxy/proxy.php?method=GET&url=";
+                url += readCookie("monitor") + '/sensors/';
                 xmlhttp.open("get", url, true);
-                xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                //xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
                 xmlhttp.onreadystatechange = getSensorsResult;
                 xmlhttp.withCredentials = "true";
                 xmlhttp.send("");
@@ -136,7 +135,7 @@
             }
             function subscribe()
             {
-                var url = "proxy/proxy.php?method=POST&url="
+                var url = "Subscriptions/saveSubscription.php?url="
                 url += readCookie("monitor") + '/subscribe/';
                 var inputs = document.getElementsByTagName("input");
                 var sensor, ip, port, metric, select, cpu = 0, ram = 0, hdd = 0;
@@ -171,6 +170,7 @@
                 
                 var params = "host=" + ip + "&port=" + port + "&cpu=" + cpu + "&hdd=" + hdd + "&ram=" + ram;
                 url += "&postdata=" + encodeURIComponent(params); 
+                url += "&metric=" + metric + "&sensor=" + ip + ":" + port;
                 http.open("GET", url, true);
                 http.onreadystatechange = getSubscribeResult;
                 //http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
