@@ -119,6 +119,16 @@ class Monitor(Thread):
         port - port sensora\n
         """
 
+        try:
+            data = urllib.urlencode({'port' : port, 'uuid' : self.get_id(), 'host' : host})
+            request  = urllib2.Request("http://%s/monitors/eraser/" % (self.catalog), data)
+            response = urllib2.urlopen(request)
+
+            if response.code != 200:
+                raise Exception
+        except Exception, e:
+            print e
+
         self.sensors.pop((host, port))
 
     def keep_alive(self): 
