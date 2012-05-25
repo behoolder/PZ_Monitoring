@@ -70,7 +70,7 @@ class Windows:
         ram = {}
 
         ram["total"] = str(myWMI.Win32_ComputerSystem()[0].TotalPhysicalMemory)
-        ram["free"]  = str(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory * 1024)
+        ram["free"]  = str(int(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory) * 1024)
         ram["used"]  = str(int(myWMI.Win32_ComputerSystem()[0].TotalPhysicalMemory) - int(myWMI.Win32_OperatingSystem()[0].FreePhysicalMemory) * 1024)
 
         return {"RAM" : ram}
