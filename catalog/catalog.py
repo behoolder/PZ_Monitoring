@@ -134,7 +134,7 @@ class Catalog(Thread):
 
         while True:
             self.check_monitors()
-            self.check_sensors()
+#            self.check_sensors()
             time.sleep(self.delay)
 
     def check_monitors(self):
@@ -227,7 +227,7 @@ class Catalog(Thread):
             if db:
                 db.close()
 
-    def del_sensor(self, sid):
+    def del_sensor(self, host, port, uuid):
         """
         Usuwa sensor z bazy danych.\n
 
@@ -239,12 +239,12 @@ class Catalog(Thread):
         try:
             db = mysql.connector.Connect(**Config.dbinfo())
             cursor = db.cursor()
-            cursor.execute("DELETE FROM Sensors WHERE sensorID = %s", (sid,))
+            cursor.execute("DELETE FROM Sensors WHERE address = %s AND port = %s AND monitorUUID = %s", (host, port, uuid))
             db.commit()
         except Exception, e:
             print e
         else:
-            print "Sensor o numerze ID: %s, został usuniety" % sid
+            print "Sensor (%s:%s) został usuniety" % (host, port)
         finally:
             if db:
                 db.close()
@@ -310,6 +310,27 @@ class CatalogHTTP:
                 response.data = CatalogHTTP.catalog.get_monitors()
             elif request.method == 'POST':
                 CatalogHTTP.catalog.m_register(str(request.remote_addr), str(request.form['port']), str(request.form['uuid']))
+        except Exception, e:
+            print e
+        else:
+            return response
+
+    @app.route('/monitors/eraser/', methods=['POST'])
+    def eraser():
+        """
+        Usuwa sensor z katalogu.\n
+
+        Dostęp: POST
+        """
+        
+        try:
+            response = make_response()
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            CatalogHTTP.catalog.del_sensor(str(request.form['host']), str(request.form['port']), str(request.form['uuid']))
         except Exception, e:
             print e
         else:
