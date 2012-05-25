@@ -100,7 +100,7 @@ class Monitor(Thread):
 
         try:
             data = urllib.urlencode({'port' : port, 'uuid' : self.get_id(), 'host' : host, 'hostname' : hostname})
-            request  = urllib2.Request("http://%s/sensors/"%(self.catalog), data)
+            request  = urllib2.Request("http://%s/sensors/" % (self.catalog), data)
             response = urllib2.urlopen(request)
 
             if response.code != 200:
@@ -109,7 +109,7 @@ class Monitor(Thread):
             print e
 
         self.sensors[(host, port)] = hostname
-        print "Sensor %s:%s pomyslnie zarejestrowany"%(host, port)
+        print "Sensor %s:%s pomyslnie zarejestrowany" % (host, port)
 
     def del_sensor(self, host, port):
         """
