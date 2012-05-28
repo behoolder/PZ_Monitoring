@@ -65,19 +65,9 @@ class SensorHTTP:
         '''
         Zwraca informacje o dysku twardym.
         '''
-        try:
-            SensorHTTP.check_monitor_id(request.headers["id"])
-        except Exception, e:
-            print e
+        
+        SensorHTTP.check_monitor_id(request.headers["id"])
         return str(SensorHTTP.sensor.disk_space())
-
-    @app.route("/hostname/", methods=['GET'])
-    def get_hostname():
-        '''
-        Zwraca informacje o nazwie hosta.
-        '''
-   
-        return str(SensorHTTP.sensor.hostname())
 
     def get_metrics(self):
         '''
@@ -98,7 +88,7 @@ class SensorHTTP:
         Sprawdza czy monitor może pobrać dane z sensora, porównując ID.
         '''
 
-        if not monitor_id == SensorHTTP.monitor_id:
+        if not str(monitor_id) == str(SensorHTTP.monitor_id):
             abort(403)
 
     check_monitor_id = staticmethod(check_monitor_id)
