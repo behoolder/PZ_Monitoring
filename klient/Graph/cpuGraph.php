@@ -29,7 +29,7 @@ if(!checkLogin())
             
             AmCharts.ready(function(){
                     chart = new AmCharts.AmSerialChart();
-                    chart.pathToImages = "amcharts/images/";
+                    chart.pathToImages = "../amcharts/images/";
                     chart.dataProvider = data;
                     chart.categoryField = "timestamp";
                     
@@ -65,17 +65,35 @@ if(!checkLogin())
                 var temp;
                 var array;
                 
-                for(var i = 0; i < rows.length; i++)
+                if(rows.length <= 50)
                 {
-                    temp = rows.item(i).value.split(';');
-                    array = new Array();
-                    for(var j = 0; j < temp.length; j++)
-                        array.push(new Array(temp[j].split('=')[0], temp[j].split('=')[1]));
-                    
-                    data.push({
-                        id: rows.item(i).id,
-                        system: array[0][1]
-                    });
+                    for(var i = 0; i < rows.length; i++)
+                    {
+                        temp = rows.item(i).value.split(';');
+                        array = new Array();
+                        for(var j = 0; j < temp.length; j++)
+                            array.push(new Array(temp[j].split('=')[0], temp[j].split('=')[1]));
+
+                        data.push({
+                            id: rows.item(i).id,
+                            system: array[0][1]
+                        });
+                    }
+                }
+                else
+                {
+                    for(var i = rows.length - 50; i < rows.length; i++)
+                    {
+                        temp = rows.item(i).value.split(';');
+                        array = new Array();
+                        for(var j = 0; j < temp.length; j++)
+                            array.push(new Array(temp[j].split('=')[0], temp[j].split('=')[1]));
+
+                        data.push({
+                            id: rows.item(i).id,
+                            system: array[0][1]
+                        });
+                    }
                 }
                 chart.dataProvider = data;
                 chart.validateData();

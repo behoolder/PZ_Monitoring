@@ -42,6 +42,16 @@
             
             function logon()
             {
+                if(document.getElementById("login").value == "")
+                {
+                    alert("Nie poda\u0142eś imienia!");
+                    return;
+                }
+                if(document.getElementById("monitorUrl").value == "")
+                {
+                    alert("Nie wybra\u0142eś monitora!");
+                    return;
+                }
                 var params = "username=" + document.getElementById("login").value;
                 var url = "Proxy/proxy.php?method=POST&url=";
                 url += document.getElementById("monitorUrl").value + '/login/';
@@ -51,8 +61,6 @@
                 xmlhttp.open("GET", url, true);
                 xmlhttp.onreadystatechange = getResult;
                 xmlhttp.send();
-                //document.cookie=params;
-                //document.cookie="monitor="+document.getElementById("monitorUrl").value;
                 
             }
             function getMonitorsList()
@@ -106,14 +114,14 @@
             <fieldset>
                 <legend>Login</legend>
                 <label>Adres katalogu:</label>
-                <input id="catalogUrl" type="text" name = "monitorUrl" value="http://localhost:1000">
+                <input id="catalogUrl" type="text" name = "monitorUrl" value="http://192.168.1.105:1000">
                 <button type="button" id="bindData" onclick="bindDataToSelect()">Szukaj</button>
                 <br>
                 <label>Adres monitora:</label>
                 <select id="monitorUrl" name="monitorUrl" size="1">
                 </select><br>
                 <label>Użytkownik</label>
-                <input id="login" type="text" name="login" value="test"><br>
+                <input id="login" type="text" name="login" value=""><br>
                 <button type="button" id="submitButton" onclick="logon()">Login</button>
             </fieldset>
         </form>

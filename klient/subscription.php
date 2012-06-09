@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 include("checkLogin.php");
 if(!checkLogin())
 {
