@@ -169,6 +169,23 @@ class Monitor(Thread):
 
         return str(self.sensors).replace('\'', '"')
 
+    def get_resources(self):
+        """
+        Zwraca informacje o udostępnianych zasobach.\n
+        """
+
+        resources = [];
+
+        for (host, port) in self.sensors:
+            r = {}
+            r["address"] = host
+            r["port"] = port
+            r["name"] = self.sensors[(host, port)]
+            r["metrics"] = ["cpu", "ram", "hdd"]
+            resources.append(r)
+
+        return str({"resources" : resources}).replace('\'', '"')
+
     def get_id(self):
         """
         Zwraca ID monitora.
@@ -429,6 +446,26 @@ class MonitorHTTP:
                 response.headers['Access-Control-Allow-Origin'] = '*'
             response.headers['Access-Control-Allow-Credentials'] = 'true' 
             response.data = MonitorHTTP.monitor.get_sensors()
+        except Exception, e:
+            print e
+        else:
+            return response
+
+    @app.route('/resources/', methods=['GET'])
+    def resources():
+        """
+        Zwraca informację o udostępnianych zasobach oraz powiązanych z nimi metrykami.\n
+        Dostęp: GET\n
+        """
+        
+        try:
+            response = make_response()
+            if 'Origin' in request.headers:
+                response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
+            else:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true' 
+            response.data = MonitorHTTP.monitor.get_resources()
         except Exception, e:
             print e
         else:
