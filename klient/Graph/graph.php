@@ -3,7 +3,7 @@
 include("../checkLogin.php");
 if(!checkLogin())
 {
-    //header('Location: login.html');
+    header('Location: login.html');
 }
 
 if(isset($_GET["sid"]))
@@ -20,11 +20,11 @@ if(!$exists)
 }
 $query = "SELECT metric FROM subscriptions WHERE id = '".$sid."'";
 $metric = $db->querySingle($query);
+$metric = strtoupper($metric);
 if(!$metric)
 {
     $message = $db->lastErrorMsg();
 }
-echo $metric;
 switch($metric)
 {
     case 'CPU':

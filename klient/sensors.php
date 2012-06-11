@@ -103,7 +103,7 @@ if(!checkLogin())
                             {
                                 option = document.createElement("option");
                                 option.appendChild(document.createTextNode(
-                                                                            jsonObject.resources[resource].metrics[metric]
+                                                                            jsonObject.resources[resource].metrics[metric].toUpperCase()
                                                                             ));
                                 select.appendChild(option)
                             }
