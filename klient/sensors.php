@@ -2,7 +2,7 @@
 include("checkLogin.php");
 if(!checkLogin())
 {
-    //header('Location: login.html');
+    header('Location: login.html');
 }
 ?>
 
